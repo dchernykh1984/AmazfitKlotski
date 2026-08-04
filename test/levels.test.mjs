@@ -45,6 +45,12 @@ describe("parseArt", () => {
     expect(() => parseArt(["X..", "...", "..."])).toThrow(/unknown block/);
     expect(() => parseArt(["...", "..", "..."])).toThrow(/cells wide/);
   });
+
+  it("rejects a board with no cells at all", () => {
+    expect(() => parseArt([])).toThrow(/at least one cell/);
+    expect(() => parseArt([""])).toThrow(/at least one cell/);
+    expect(() => parseArt(undefined)).toThrow(/at least one cell/);
+  });
 });
 
 describe("the bundled levels", () => {

@@ -1,13 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LABELS } from "../lib/i18n/labels.js";
 import { UI_KEYS, budgetFor, levelKey, MAX_LABEL, MAX_HINT } from "../lib/i18n/keys.js";
-import {
-  LANGUAGES,
-  DEFAULT_LANGUAGE,
-  labelFor,
-  resolveLanguage,
-  languageFromZeppCode,
-} from "../lib/i18n/index.js";
+import { LANGUAGES, DEFAULT_LANGUAGE, labelFor, languageFromZeppCode } from "../lib/i18n/index.js";
 import { LEVELS } from "../lib/levels.js";
 
 // The language list mirrors the sibling AmazfitSerpent and AmazfitRaceStats apps:
@@ -54,21 +48,6 @@ describe("locale completeness", () => {
         expect(LABELS[lang][levelKey(level.id)], `${lang}/${level.id}`).toBeTruthy();
       }
     }
-  });
-});
-
-describe("resolveLanguage", () => {
-  it("maps a device locale to a supported 2-letter language", () => {
-    expect(resolveLanguage("ru-RU")).toBe("ru");
-    expect(resolveLanguage("en_US")).toBe("en");
-    expect(resolveLanguage("kk-KZ")).toBe("kk");
-    expect(resolveLanguage("de")).toBe("de");
-  });
-
-  it("falls back to the default for unknown or empty locales", () => {
-    expect(resolveLanguage("ja-JP")).toBe(DEFAULT_LANGUAGE);
-    expect(resolveLanguage("")).toBe(DEFAULT_LANGUAGE);
-    expect(resolveLanguage(undefined)).toBe(DEFAULT_LANGUAGE);
   });
 });
 

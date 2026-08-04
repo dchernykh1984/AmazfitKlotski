@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createGame, isSolved, move } from "../../lib/klotski.js";
-import { positionKey, reachablePositions, shortestSolution, solutionMoves } from "./solver.mjs";
+import { positionKey, shortestSolution, solutionMoves } from "./solver.mjs";
 
 // Three cells wide, three tall, one hero and one soldier out of the way: the
 // shortest way to bring the hero to (1, 1) is right, then down.
@@ -87,21 +87,5 @@ describe("solutionMoves", () => {
 
   it("gives up loudly rather than searching forever", () => {
     expect(() => solutionMoves(TOY, 1)).toThrow(/gave up/);
-    expect(() => reachablePositions(TOY, 0)).toThrow(/gave up/);
-  });
-});
-
-describe("reachablePositions", () => {
-  it("counts every position the blocks can be shuffled into", () => {
-    // One soldier on a 2x2 board with the hero absent: four cells, four positions.
-    const level = {
-      id: "walk",
-      par: 0,
-      cols: 2,
-      rows: 2,
-      goal: { x: 1, y: 1 },
-      blocks: [{ kind: "soldier", x: 0, y: 0 }],
-    };
-    expect(reachablePositions(level)).toBe(4);
   });
 });

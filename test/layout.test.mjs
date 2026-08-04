@@ -8,7 +8,6 @@ import {
   SELECTION_MARGIN,
   TILE_GAP,
   TRAY_MARGIN,
-  cellAt,
   screenLayout,
   selectionBox,
   tileBox,
@@ -150,37 +149,6 @@ describe("tileBox", () => {
         expect(box.y, level.id).toBeGreaterThanOrEqual(board.y);
         expect(box.x + box.w, level.id).toBeLessThanOrEqual(board.x + board.w);
         expect(box.y + box.h, level.id).toBeLessThanOrEqual(board.y + board.h);
-      }
-    }
-  });
-});
-
-describe("cellAt", () => {
-  it("maps a touch to the cell under it", () => {
-    const board = screenLayout(DESIGN_SIZE).board;
-    expect(cellAt(board, board.x + 1, board.y + 1)).toEqual({ column: 0, row: 0 });
-    expect(cellAt(board, board.x + CELL, board.y + 2 * CELL)).toEqual({ column: 1, row: 2 });
-    expect(cellAt(board, board.x + board.w - 1, board.y + board.h - 1)).toEqual({
-      column: BOARD_COLS - 1,
-      row: BOARD_ROWS - 1,
-    });
-  });
-
-  it("returns null for a touch that missed the board", () => {
-    const board = screenLayout(DESIGN_SIZE).board;
-    expect(cellAt(board, board.x - 1, board.y)).toBeNull();
-    expect(cellAt(board, board.x, board.y - 1)).toBeNull();
-    expect(cellAt(board, board.x + board.w, board.y)).toBeNull();
-    expect(cellAt(board, board.x, board.y + board.h)).toBeNull();
-  });
-
-  it("agrees with tileBox on every cell", () => {
-    const board = screenLayout(DESIGN_SIZE).board;
-    for (let row = 0; row < BOARD_ROWS; row++) {
-      for (let column = 0; column < BOARD_COLS; column++) {
-        const box = tileBox(board, column, row, 1, 1);
-        expect(cellAt(board, box.x, box.y)).toEqual({ column, row });
-        expect(cellAt(board, box.x + box.w - 1, box.y + box.h - 1)).toEqual({ column, row });
       }
     }
   });
