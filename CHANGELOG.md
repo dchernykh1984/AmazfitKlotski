@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.0...amazfit-klotski-v0.2.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* keep the icon buttons at the size their pictures are cut for ([9920d00](https://github.com/dchernykh1984/AmazfitKlotski/commit/9920d001c8c753e4ea6089ca5c8a8f3639312bd6))
+* pick a block up on release so a swipe cannot steal it ([6682c90](https://github.com/dchernykh1984/AmazfitKlotski/commit/6682c901619714a84427e0e813d56f9fed8b6cc0))
+* scale the board and its controls to the watch it lands on ([c61f9ba](https://github.com/dchernykh1984/AmazfitKlotski/commit/c61f9ba5b41bae37f66ab6f3bf2b52bc3b376758))
+
 ## [0.2.0](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.1.0...amazfit-klotski-v0.2.0) (2026-08-04)
 
 
