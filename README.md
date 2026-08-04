@@ -12,9 +12,9 @@ the watch: no phone, no network, no account.
   margins beside and below it.
 - **Controls** - tap a block to pick it up, then swipe up / down / left / right to
   slide it one cell. The selected block keeps the gold ring, so a run of swipes
-  pushes the same block along. Tap it again to let it go. Swipes are swallowed
-  while a game is on, so sliding a block to the right cannot back you out of the
-  app; from any menu, swipe right to leave.
+  pushes the same block along; tap another block to move the ring to it. Swipes
+  are swallowed while a game is on, so sliding a block to the right cannot back
+  you out of the app; from any menu, swipe right to leave.
 - **Undo, restart, menu** - undo takes back one move (and the counter with it),
   restart puts the board back as it started, and the menu button pauses over the
   board so the position is still there when you come back.
