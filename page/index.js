@@ -76,17 +76,55 @@ function writeValue(storage, key, value) {
   }
 }
 
-// Hook a tap on a widget. Not every firmware wires touch up to every kind of
+// How far a finger may travel and still count as a tap rather than the opening of
+// a swipe: a third of a cell, which is smaller than any deliberate slide and
+// larger than the wobble of a finger pressing down.
+const TAP_SLOP = Math.max(6, Math.round(BOARD.cell / 3));
+
+// Hook one event on a widget. Not every firmware wires touch up to every kind of
 // widget, and one that does not must not take the page down with it, so a refusal
-// here is swallowed: the tiles and the board underneath them both listen, and
-// either one is enough to play.
-function listen(widget, callback) {
+// is reported rather than thrown.
+function bind(widget, name, callback) {
   try {
-    widget.addEventListener(hmUI.event.CLICK_DOWN, callback);
+    widget.addEventListener(name, callback);
     return true;
   } catch {
     return false;
   }
+}
+
+// Hook a tap: a touch that goes down and comes up again in the same place. The
+// pick has to wait for the release, because a swipe opens with a touch-down on
+// whatever block the finger happens to land on - picking that one would quietly
+// steal the swipe from the block the player actually chose.
+//
+// If a firmware refuses the release event, the pick falls back to the press. A
+// game that occasionally picks up the wrong block is still a game; one that can
+// never pick up any block at all is not.
+function listen(widget, callback) {
+  let start = null;
+  const onRelease = bind(widget, hmUI.event.CLICK_UP, (info) => {
+    const from = start;
+    start = null;
+    if (!from) {
+      // No press was seen, so there is nothing to compare against.
+      callback(info);
+      return;
+    }
+    if (info && (Math.abs(info.x - from.x) > TAP_SLOP || Math.abs(info.y - from.y) > TAP_SLOP)) {
+      // The finger travelled: that was a swipe, and the swipe belongs to whatever
+      // block is already picked up.
+      return;
+    }
+    callback(from);
+  });
+  const onPress = bind(widget, hmUI.event.CLICK_DOWN, (info) => {
+    start = info || null;
+    if (!onRelease) {
+      callback(info);
+    }
+  });
+  return onPress || onRelease;
 }
 
 // The swipes that slide a block, mapped to board directions. Everything else the
