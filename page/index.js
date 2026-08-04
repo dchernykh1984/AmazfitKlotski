@@ -13,20 +13,25 @@ import { LocalStorage } from "@zos/storage";
 
 import {
   DOWN,
-  KINDS,
   LEFT,
   RIGHT,
   UP,
-  canMove,
   createGame,
   isSolved,
   move,
   restart,
   undo,
 } from "../lib/klotski.js";
-import { FIRST_LEVEL, GOAL, levelById, nextLevel, previousLevel } from "../lib/levels.js";
+import { FIRST_LEVEL, levelById, nextLevel, previousLevel } from "../lib/levels.js";
 import { CONTROL_ART, assignArt } from "../lib/pieces.js";
-import { exitBox, screenLayout, tileBox } from "../lib/layout.js";
+import {
+  BOARD_RADIUS,
+  SELECTION_RADIUS,
+  TRAY_RADIUS,
+  screenLayout,
+  selectionBox,
+  tileBox,
+} from "../lib/layout.js";
 import { centeredBox } from "../lib/round-geometry.js";
 import { labelFor, languageFromZeppCode, levelKey } from "../lib/i18n/index.js";
 import { LEVEL_KEY, bestKey, hasRecord, normalizeMoves, updateBest } from "../lib/scores.js";
@@ -46,19 +51,15 @@ import {
   MENU_BUTTON_HEIGHT,
   MENU_GAP,
   PANEL_ALPHA,
-  SELECTION_MARGIN,
   SELECTION_WIDTH,
   TEXT_HINT,
   TEXT_ROW,
   TEXT_SMALL,
   TEXT_TITLE,
-  TRAY_MARGIN,
-  TRAY_RADIUS,
 } from "../utils/config/constants.js";
 
 const LAYOUT = screenLayout(SCREEN_SIZE);
 const BOARD = LAYOUT.board;
-const MENU_WIDTH = BOARD.w - 16;
 
 // A widget that failed to take a setting is not worth crashing a game over, and a
 // watch that has no storage should still play - just without remembering. The
@@ -216,10 +217,9 @@ Page({
   slide(direction) {
     const game = this.state.game;
     const id = this.state.selected;
-    if (!game || id === null || !canMove(game, id, direction)) {
+    if (!game || id === null || !move(game, id, direction)) {
       return;
     }
-    move(game, id, direction);
     this.drawTile(id);
     this.drawSelection();
     this.drawCounter();
@@ -411,10 +411,10 @@ Page({
       color: COLOR_BACKGROUND,
     });
     hmUI.createWidget(hmUI.widget.FILL_RECT, {
-      x: BOARD.x - TRAY_MARGIN,
-      y: BOARD.y - TRAY_MARGIN,
-      w: BOARD.w + 2 * TRAY_MARGIN,
-      h: BOARD.h + 2 * TRAY_MARGIN,
+      x: LAYOUT.tray.x,
+      y: LAYOUT.tray.y,
+      w: LAYOUT.tray.w,
+      h: LAYOUT.tray.h,
       radius: TRAY_RADIUS,
       color: COLOR_TRAY,
     });
@@ -423,15 +423,14 @@ Page({
       y: BOARD.y,
       w: BOARD.w,
       h: BOARD.h,
-      radius: TRAY_RADIUS - TRAY_MARGIN,
+      radius: BOARD_RADIUS,
       color: COLOR_BOARD,
     });
-    const exit = exitBox(BOARD, GOAL, KINDS.hero.w);
     hmUI.createWidget(hmUI.widget.FILL_RECT, {
-      x: exit.x,
-      y: exit.y,
-      w: exit.w,
-      h: exit.h + TRAY_MARGIN,
+      x: LAYOUT.gate.x,
+      y: LAYOUT.gate.y,
+      w: LAYOUT.gate.w,
+      h: LAYOUT.gate.h,
       color: COLOR_EXIT,
     });
   },
@@ -488,13 +487,13 @@ Page({
       return;
     }
     const block = game.blocks[id];
-    const box = tileBox(BOARD, block.x, block.y, block.w, block.h);
+    const ring = selectionBox(tileBox(BOARD, block.x, block.y, block.w, block.h));
     this.state.selection = hmUI.createWidget(hmUI.widget.STROKE_RECT, {
-      x: box.x - SELECTION_MARGIN,
-      y: box.y - SELECTION_MARGIN,
-      w: box.w + 2 * SELECTION_MARGIN,
-      h: box.h + 2 * SELECTION_MARGIN,
-      radius: 8,
+      x: ring.x,
+      y: ring.y,
+      w: ring.w,
+      h: ring.h,
+      radius: SELECTION_RADIUS,
       line_width: SELECTION_WIDTH,
       color: COLOR_SELECTION,
     });
@@ -569,7 +568,7 @@ Page({
         y: BOARD.y,
         w: BOARD.w,
         h: BOARD.h,
-        radius: TRAY_RADIUS - TRAY_MARGIN,
+        radius: BOARD_RADIUS,
         color: COLOR_BACKGROUND,
         alpha: PANEL_ALPHA,
       })
@@ -579,7 +578,7 @@ Page({
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.kind !== "gap") {
-        const box = centeredBox(SCREEN_SIZE, y, item.height, MENU_WIDTH, 0);
+        const box = centeredBox(SCREEN_SIZE, y, item.height, LAYOUT.menuWidth, 0);
         if (item.kind === "button") {
           this.state.menu.push(this.createButton(box, item.text, item.onClick));
         } else {
