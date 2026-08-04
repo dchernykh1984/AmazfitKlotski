@@ -13,20 +13,12 @@ export const COLOR_ACCENT = 0xe8cf9a;
 export const COLOR_BUTTON = 0x241c16;
 export const COLOR_BUTTON_PRESSED = 0x3d3025;
 
-// How thick the ring around the selected block is. Where it sits is geometry and
-// lives in lib/layout.js with the rest of the boxes.
-export const SELECTION_WIDTH = 3;
-
 // The dimmed panel a menu is drawn on, over a board that stays visible behind it.
 export const PANEL_ALPHA = 225;
 
-// Type scale for the menus, in pixels.
-export const TEXT_TITLE = 40;
-export const TEXT_ROW = 30;
-export const TEXT_SMALL = 24;
-export const TEXT_HINT = 22;
-export const MENU_BUTTON_HEIGHT = 46;
-export const MENU_GAP = 10;
+// Every measurement - the board, the buttons, the ring around a selected block and
+// the type scale - is geometry, scales with the screen, and lives in lib/layout.js
+// where a test can reach it. Only colours and timings are left here.
 
 // How long the screen stays lit while the app is open. A puzzle is solved in long
 // silences with nothing touching the screen, and the default ten second display

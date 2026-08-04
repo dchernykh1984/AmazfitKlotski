@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { GENERAL, GUARD, HERO, KINDS, SOLDIER, createGame } from "../lib/klotski.js";
 import { TILE_ART, allArt, artFor, artSize, assignArt } from "../lib/pieces.js";
-import { tileSize } from "../lib/layout.js";
+import { nativeTileSize } from "../lib/layout.js";
 import { LEVELS } from "../lib/levels.js";
 
 describe("TILE_ART", () => {
@@ -79,9 +79,11 @@ describe("assignArt", () => {
 });
 
 describe("artSize", () => {
-  it("matches the pixel box the block is drawn in", () => {
+  it("matches the pixel box the block is cut for", () => {
+    // The watch scales the picture into whatever cell the screen ended up with;
+    // these are the dimensions the files themselves have.
     for (const kind of Object.keys(KINDS)) {
-      expect(artSize(kind), kind).toEqual(tileSize(KINDS[kind].w, KINDS[kind].h));
+      expect(artSize(kind), kind).toEqual(nativeTileSize(KINDS[kind].w, KINDS[kind].h));
     }
   });
 

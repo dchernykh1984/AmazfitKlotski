@@ -34,10 +34,15 @@ the watch: no phone, no network, no account.
 
 ## Devices
 
-Round watches only, built for both round resolutions: **466** (GTR 4, Active 2
-Round, Balance, Cheetah, ...) and **480** (T-Rex 3, Balance 2, ...). The block
-faces are real pictures, so the board keeps one fixed cell size on every model and
-is centred rather than stretched. Square devices are intentionally out of scope.
+Round watches only. The target names **466** (GTR 4, Active 2 Round, Balance,
+Cheetah, ...) and **480** (T-Rex 3, Balance 2, ...), but Zeus expands a round
+target to every round size it knows, so the store bundle also carries packages for
+**360**, **416** and **454** watches. The whole screen - board, tray, buttons and
+type - is therefore drawn to the 466px design and scaled to the diameter it lands
+on, and the block portraits are scaled into their cell rather than drawn at their
+own size. `test/layout.test.mjs` holds every one of those sizes to the same rules,
+and `test/page.test.mjs` plays a board through on each of them. Square devices are
+intentionally out of scope.
 
 ## Setup
 

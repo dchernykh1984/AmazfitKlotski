@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ICON_ART } from "../lib/pieces.js";
-import { CELL } from "../lib/layout.js";
-import { BOARD_COLS, BOARD_ROWS } from "../lib/levels.js";
+import { screenLayout } from "../lib/layout.js";
 import { LABELS } from "../lib/i18n/labels.js";
 import { LANGUAGES } from "../lib/i18n/index.js";
 
@@ -54,10 +53,19 @@ describe("app.json", () => {
     }
   });
 
-  it("targets screens the fixed board actually fits on", () => {
-    const diagonal = Math.sqrt((BOARD_COLS * CELL) ** 2 + (BOARD_ROWS * CELL) ** 2);
+  it("lays out cleanly on every screen it names", () => {
+    // Zeus expands a round target to every round size it knows, so the bundle
+    // reaches watches this list does not name; those are covered in the layout
+    // test. This one holds the sizes the target itself declares.
     for (const platform of appJson.targets.common.platforms) {
-      expect(platform.dw, String(platform.dw)).toBeGreaterThanOrEqual(diagonal);
+      const layout = screenLayout(platform.dw);
+      const radius = platform.dw / 2;
+      const corner = Math.max(
+        Math.hypot(layout.tray.x - radius, layout.tray.y - radius),
+        Math.hypot(layout.tray.x + layout.tray.w - radius, layout.tray.y + layout.tray.h - radius)
+      );
+      expect(corner, String(platform.dw)).toBeLessThanOrEqual(radius);
+      expect(layout.board.cell, String(platform.dw)).toBeGreaterThan(0);
     }
   });
 
