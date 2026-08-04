@@ -204,13 +204,14 @@ Page({
     return true;
   },
 
-  // A tap picks the block a swipe will move. Tapping the selected block again
-  // lets it go, which is the only way to have nothing selected mid-game.
+  // A tap picks the block a swipe will move. Tapping the same block again is a
+  // natural thing to do halfway through sliding it along, so it keeps the block
+  // rather than toggling the selection off and swallowing the next swipe.
   select(id) {
-    if (this.state.screen !== "playing") {
+    if (this.state.screen !== "playing" || this.state.selected === id) {
       return;
     }
-    this.state.selected = this.state.selected === id ? null : id;
+    this.state.selected = id;
     this.drawSelection();
   },
 
