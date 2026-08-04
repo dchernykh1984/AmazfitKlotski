@@ -95,36 +95,3 @@ export function shortestSolution(level, limit = 400000) {
   const line = solutionMoves(level, limit);
   return line === null ? null : line.length;
 }
-
-// How many distinct positions the level can reach. A level whose blocks are
-// wedged has a tiny number here, which makes it a poor puzzle.
-export function reachablePositions(level, limit = 400000) {
-  const game = createGame(level);
-  const start = snapshot(game);
-  const seen = new Set([positionKey(game)]);
-  const queue = [start];
-  while (queue.length > 0) {
-    const positions = queue.pop();
-    restore(game, positions);
-    if (seen.size > limit) {
-      throw new Error(`solver gave up after ${limit} positions`);
-    }
-    for (let id = 0; id < game.blocks.length; id++) {
-      for (let d = 0; d < DIRECTIONS.length; d++) {
-        const direction = DIRECTIONS[d];
-        if (!canMove(game, id, direction)) {
-          continue;
-        }
-        move(game, id, direction);
-        const key = positionKey(game);
-        if (!seen.has(key)) {
-          seen.add(key);
-          queue.push(snapshot(game));
-        }
-        undo(game);
-        restore(game, positions);
-      }
-    }
-  }
-  return seen.size;
-}

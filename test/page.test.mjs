@@ -434,6 +434,36 @@ describe("solving a board", () => {
     expect(ui.hasText(en.solved)).toBe(false);
     expect(tiles().length).toBe(FIRST.blocks.length);
   });
+
+  it("ignores taps on the board once it is solved", async () => {
+    await boot();
+    press(en.play);
+    playOut(FIRST.id);
+
+    // The tiles are still there under the panel; tapping one must not start
+    // selecting blocks on a game that is over.
+    tiles()[0].props.click_func();
+    expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
+    expect(ui.hasText(en.solved)).toBe(true);
+  });
+
+  // The whole loop, over the longest board there is: 116 taps and swipes, a tile
+  // redrawn on every one of them, and the record written at the end.
+  it(
+    "sees a 116 move game through from the first tap to the record",
+    { timeout: 120000 },
+    async () => {
+      const hardest = LEVELS[LEVELS.length - 1];
+      await boot({ stored: { [LEVEL_KEY]: hardest.id } });
+      press(en.play);
+
+      const moves = playOut(hardest.id);
+      expect(moves).toBe(hardest.par);
+      expect(ui.hasText(`${en.moves} ${hardest.par}`)).toBe(true);
+      expect(storage.stored()[bestKey(hardest.id)]).toBe(hardest.par);
+      expect(tiles().length).toBe(hardest.blocks.length);
+    }
+  );
 });
 
 describe("the screen it leaves behind", () => {

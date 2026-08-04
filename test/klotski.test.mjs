@@ -8,12 +8,9 @@ import {
   LEFT,
   RIGHT,
   UP,
-  blockAt,
-  blockById,
   canMove,
   createGame,
   isSolved,
-  legalDirections,
   move,
   occupancy,
   restart,
@@ -88,22 +85,6 @@ describe("occupancy", () => {
   });
 });
 
-describe("blockAt", () => {
-  it("finds the block covering a cell", () => {
-    const game = createGame(TOY);
-    expect(blockAt(game, 1, 1).id).toBe(0);
-    expect(blockAt(game, 0, 2).id).toBe(1);
-  });
-
-  it("returns null for a free cell and for anything off the board", () => {
-    const game = createGame(TOY);
-    expect(blockAt(game, 2, 0)).toBeNull();
-    expect(blockAt(game, -1, 0)).toBeNull();
-    expect(blockAt(game, 0, 3)).toBeNull();
-    expect(blockAt(game, 3, 0)).toBeNull();
-  });
-});
-
 describe("canMove", () => {
   it("allows a slide into free cells", () => {
     const game = createGame(TOY);
@@ -138,14 +119,9 @@ describe("canMove", () => {
   });
 });
 
-describe("legalDirections", () => {
-  it("lists the ways out in a fixed order", () => {
-    const game = createGame(TOY);
-    expect(legalDirections(game, 0)).toEqual([RIGHT]);
-    expect(legalDirections(game, 1)).toEqual([RIGHT]);
-  });
-
-  it("returns nothing for a wedged block", () => {
+describe("DIRECTIONS", () => {
+  it("is the four ways a block can go, in a fixed order", () => {
+    expect(DIRECTIONS).toEqual([UP, RIGHT, DOWN, LEFT]);
     const wedged = createGame({
       id: "wedged",
       par: 0,
@@ -154,11 +130,7 @@ describe("legalDirections", () => {
       goal: { x: 0, y: 0 },
       blocks: [{ kind: "hero", x: 0, y: 0 }],
     });
-    expect(legalDirections(wedged, 0)).toEqual([]);
-  });
-
-  it("covers all four directions", () => {
-    expect(DIRECTIONS).toEqual([UP, RIGHT, DOWN, LEFT]);
+    expect(DIRECTIONS.filter((direction) => canMove(wedged, 0, direction))).toEqual([]);
     const open = createGame({
       id: "open",
       par: 0,
@@ -167,7 +139,7 @@ describe("legalDirections", () => {
       goal: { x: 0, y: 0 },
       blocks: [{ kind: "soldier", x: 1, y: 1 }],
     });
-    expect(legalDirections(open, 0)).toEqual([UP, RIGHT, DOWN, LEFT]);
+    expect(DIRECTIONS.filter((direction) => canMove(open, 0, direction))).toEqual(DIRECTIONS);
   });
 });
 
@@ -260,13 +232,5 @@ describe("isSolved", () => {
     move(game, 1, UP);
     expect(game.blocks[1]).toMatchObject({ x: 1, y: 2 });
     expect(isSolved(game)).toBe(false);
-  });
-});
-
-describe("blockById", () => {
-  it("looks a block up, or returns null when there is no such block", () => {
-    const game = createGame(TOY);
-    expect(blockById(game, 1).kind).toBe("soldier");
-    expect(blockById(game, 7)).toBeNull();
   });
 });
