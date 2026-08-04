@@ -3,11 +3,14 @@ import {
   BUTTON_SIZE,
   CELL,
   DESIGN_SIZE,
+  MENU_INSET,
   SCREEN_PADDING,
+  SELECTION_MARGIN,
   TILE_GAP,
+  TRAY_MARGIN,
   cellAt,
-  exitBox,
   screenLayout,
+  selectionBox,
   tileBox,
   tileSize,
 } from "../lib/layout.js";
@@ -43,9 +46,42 @@ describe("screenLayout", () => {
     }
   });
 
-  it("keeps the board inside the round screen", () => {
+  it("keeps the board and its tray inside the round screen", () => {
     for (const size of ROUND_SIZES) {
-      expect(insideScreen(size, screenLayout(size).board), String(size)).toBe(true);
+      const layout = screenLayout(size);
+      expect(insideScreen(size, layout.board), String(size)).toBe(true);
+      expect(insideScreen(size, layout.tray), String(size)).toBe(true);
+    }
+  });
+
+  it("wraps the tray around the board", () => {
+    for (const size of ROUND_SIZES) {
+      const { board, tray } = screenLayout(size);
+      expect(board.x - tray.x, String(size)).toBe(TRAY_MARGIN);
+      expect(board.y - tray.y, String(size)).toBe(TRAY_MARGIN);
+      expect(tray.x + tray.w - (board.x + board.w), String(size)).toBe(TRAY_MARGIN);
+      expect(tray.y + tray.h - (board.y + board.h), String(size)).toBe(TRAY_MARGIN);
+    }
+  });
+
+  it("cuts the gate through the tray under the goal", () => {
+    for (const size of ROUND_SIZES) {
+      const { board, tray, gate } = screenLayout(size);
+      expect(gate.x, String(size)).toBe(board.x + GOAL.x * CELL);
+      expect(gate.w, String(size)).toBe(KINDS.hero.w * CELL);
+      // It starts where the board ends and reaches the outer edge of the tray, so
+      // the rim really is open there.
+      expect(gate.y, String(size)).toBe(board.y + board.h);
+      expect(gate.y + gate.h, String(size)).toBe(tray.y + tray.h);
+      expect(gate.x + gate.w, String(size)).toBeLessThanOrEqual(board.x + board.w);
+    }
+  });
+
+  it("leaves room inside the menu panel for its rows", () => {
+    for (const size of ROUND_SIZES) {
+      const layout = screenLayout(size);
+      expect(layout.menuWidth, String(size)).toBe(layout.board.w - 2 * MENU_INSET);
+      expect(layout.menuWidth, String(size)).toBeLessThan(layout.board.w);
     }
   });
 
@@ -150,13 +186,24 @@ describe("cellAt", () => {
   });
 });
 
-describe("exitBox", () => {
-  it("marks the gap in the bottom wall under the goal", () => {
+describe("selectionBox", () => {
+  it("frames a block without covering it", () => {
     const board = screenLayout(DESIGN_SIZE).board;
-    const exit = exitBox(board, GOAL, KINDS.hero.w);
-    expect(exit.x).toBe(board.x + GOAL.x * CELL);
-    expect(exit.w).toBe(KINDS.hero.w * CELL);
-    expect(exit.y).toBe(board.y + board.h);
-    expect(exit.x + exit.w).toBeLessThanOrEqual(board.x + board.w);
+    const tile = tileBox(board, 1, 0, 2, 2);
+    const ring = selectionBox(tile);
+    expect(ring.x).toBe(tile.x - SELECTION_MARGIN);
+    expect(ring.y).toBe(tile.y - SELECTION_MARGIN);
+    expect(ring.w).toBe(tile.w + 2 * SELECTION_MARGIN);
+    expect(ring.h).toBe(tile.h + 2 * SELECTION_MARGIN);
+  });
+
+  it("stays inside the cells the block occupies", () => {
+    const board = screenLayout(DESIGN_SIZE).board;
+    // The ring may eat into the gap between blocks but must not reach the
+    // neighbouring cell, or it would sit on top of another portrait.
+    expect(SELECTION_MARGIN).toBeLessThanOrEqual(TILE_GAP);
+    const ring = selectionBox(tileBox(board, 1, 1, 1, 1));
+    expect(ring.x).toBeGreaterThanOrEqual(board.x + CELL);
+    expect(ring.x + ring.w).toBeLessThanOrEqual(board.x + 2 * CELL);
   });
 });

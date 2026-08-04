@@ -13,14 +13,9 @@ export const COLOR_ACCENT = 0xe8cf9a;
 export const COLOR_BUTTON = 0x241c16;
 export const COLOR_BUTTON_PRESSED = 0x3d3025;
 
-// The tray drawn under the board, and how far it sticks out past the cells.
-export const TRAY_MARGIN = 6;
-export const TRAY_RADIUS = 14;
-
-// How thick the ring around the selected block is, and how far outside the block
-// it sits, so it frames the portrait instead of covering it.
+// How thick the ring around the selected block is. Where it sits is geometry and
+// lives in lib/layout.js with the rest of the boxes.
 export const SELECTION_WIDTH = 3;
-export const SELECTION_MARGIN = 1;
 
 // The dimmed panel a menu is drawn on, over a board that stays visible behind it.
 export const PANEL_ALPHA = 225;
