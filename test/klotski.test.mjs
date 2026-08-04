@@ -8,6 +8,7 @@ import {
   LEFT,
   RIGHT,
   UP,
+  blockAt,
   canMove,
   createGame,
   isSolved,
@@ -82,6 +83,31 @@ describe("occupancy", () => {
     const game = createGame(TOY);
     move(game, 0, RIGHT);
     expect(gridOf(game)).toEqual([".00", ".00", "1.."]);
+  });
+});
+
+describe("blockAt", () => {
+  it("finds the block covering a cell", () => {
+    const game = createGame(TOY);
+    expect(blockAt(game, 0, 0).id).toBe(0);
+    expect(blockAt(game, 1, 1).id).toBe(0);
+    expect(blockAt(game, 0, 2).id).toBe(1);
+  });
+
+  it("returns null for a free cell and for anything off the board", () => {
+    const game = createGame(TOY);
+    expect(blockAt(game, 2, 0)).toBeNull();
+    expect(blockAt(game, -1, 0)).toBeNull();
+    expect(blockAt(game, 0, -1)).toBeNull();
+    expect(blockAt(game, 0, 3)).toBeNull();
+    expect(blockAt(game, 3, 0)).toBeNull();
+  });
+
+  it("follows a block that has moved", () => {
+    const game = createGame(TOY);
+    move(game, 0, RIGHT);
+    expect(blockAt(game, 0, 0)).toBeNull();
+    expect(blockAt(game, 2, 1).id).toBe(0);
   });
 });
 

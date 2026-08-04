@@ -32,9 +32,10 @@ from Wikimedia Commons, which mirrors the museum's files.
 | `soldier-3.png` | DP280175                   | Foot soldier in a black cap        |
 | `soldier-4.png` | DP280185                   | Foot soldier, painted face         |
 
-Each file is a crop of one leaf, resized to exactly the pixel box the watch draws
-that kind of block in (see `lib/layout.js`), warmed slightly, and given rounded
-corners. The leaves were downloaded from Wikimedia Commons at 900px wide via
+Each file is a crop of one leaf, resized to exactly the pixel box that kind of
+block occupies in the 466px design (see `lib/layout.js`), warmed slightly, and
+given rounded corners. On any other round watch the watch scales the picture into
+whatever cell that screen ended up with, so one set of files serves them all. The leaves were downloaded from Wikimedia Commons at 900px wide via
 `Special:FilePath`. The painted figure was located by looking for saturated or
 dark pixels against the bare silk, and the crop taken relative to that figure -
 the whole figure for a standing general, head and shoulders for the commander,

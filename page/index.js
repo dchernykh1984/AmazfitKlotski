@@ -16,6 +16,7 @@ import {
   LEFT,
   RIGHT,
   UP,
+  blockAt,
   createGame,
   isSolved,
   move,
@@ -24,14 +25,7 @@ import {
 } from "../lib/klotski.js";
 import { FIRST_LEVEL, levelById, nextLevel, previousLevel } from "../lib/levels.js";
 import { CONTROL_ART, assignArt } from "../lib/pieces.js";
-import {
-  BOARD_RADIUS,
-  SELECTION_RADIUS,
-  TRAY_RADIUS,
-  screenLayout,
-  selectionBox,
-  tileBox,
-} from "../lib/layout.js";
+import { cellAt, screenLayout, selectionBox, tileBox } from "../lib/layout.js";
 import { centeredBox } from "../lib/round-geometry.js";
 import { labelFor, languageFromZeppCode, levelKey } from "../lib/i18n/index.js";
 import { LEVEL_KEY, bestKey, hasRecord, normalizeMoves, updateBest } from "../lib/scores.js";
@@ -48,18 +42,12 @@ import {
   COLOR_SELECTION,
   COLOR_TEXT,
   COLOR_TRAY,
-  MENU_BUTTON_HEIGHT,
-  MENU_GAP,
   PANEL_ALPHA,
-  SELECTION_WIDTH,
-  TEXT_HINT,
-  TEXT_ROW,
-  TEXT_SMALL,
-  TEXT_TITLE,
 } from "../utils/config/constants.js";
 
 const LAYOUT = screenLayout(SCREEN_SIZE);
 const BOARD = LAYOUT.board;
+const TEXT = LAYOUT.text;
 
 // A widget that failed to take a setting is not worth crashing a game over, and a
 // watch that has no storage should still play - just without remembering. The
@@ -85,6 +73,19 @@ function writeValue(storage, key, value) {
     } catch {
       // The in-memory copy above still holds for this session.
     }
+  }
+}
+
+// Hook a tap on a widget. Not every firmware wires touch up to every kind of
+// widget, and one that does not must not take the page down with it, so a refusal
+// here is swallowed: the tiles and the board underneath them both listen, and
+// either one is enough to play.
+function listen(widget, callback) {
+  try {
+    widget.addEventListener(hmUI.event.CLICK_DOWN, callback);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -215,6 +216,22 @@ Page({
     this.drawSelection();
   },
 
+  // A tap that arrived at the board rather than at a tile: work out which cell it
+  // landed in and pick whatever block is standing there.
+  tapBoard(info) {
+    if (!info || this.state.screen !== "playing" || !this.state.game) {
+      return;
+    }
+    const cell = cellAt(BOARD, info.x, info.y);
+    if (!cell) {
+      return;
+    }
+    const block = blockAt(this.state.game, cell.column, cell.row);
+    if (block) {
+      this.select(block.id);
+    }
+  },
+
   slide(direction) {
     const game = this.state.game;
     const id = this.state.selected;
@@ -257,28 +274,28 @@ Page({
 
     const level = levelById(this.state.levelId);
     this.drawMenu([
-      { kind: "text", height: TEXT_TITLE, color: COLOR_TEXT, text: this.text("title") },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "text", height: TEXT.title, color: COLOR_TEXT, text: this.text("title") },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text(levelKey(level.id)),
         onClick: () => this.chooseLevel(nextLevel(this.state.levelId).id),
       },
       {
         kind: "text",
-        height: TEXT_SMALL,
+        height: TEXT.small,
         color: COLOR_MUTED,
         text: `${this.text("par")} ${level.par}   ${this.text("best")} ${this.bestText()}`,
       },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text("play"),
         onClick: () => this.startGame(),
       },
-      { kind: "text", height: TEXT_HINT, color: COLOR_MUTED, text: this.text("hint") },
+      { kind: "text", height: TEXT.hint, color: COLOR_MUTED, text: this.text("hint") },
     ]);
   },
 
@@ -324,14 +341,14 @@ Page({
     this.drawMenu([
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text("resume"),
         onClick: () => this.resumeGame(),
       },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text("levels"),
         onClick: () => this.showStart(),
       },
@@ -361,31 +378,31 @@ Page({
     }
 
     this.drawMenu([
-      { kind: "text", height: TEXT_TITLE, color: COLOR_ACCENT, text: this.text("solved") },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "text", height: TEXT.title, color: COLOR_ACCENT, text: this.text("solved") },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "text",
-        height: TEXT_ROW,
+        height: TEXT.row,
         color: COLOR_TEXT,
         text: `${this.text("moves")} ${moves}`,
       },
       {
         kind: "text",
-        height: TEXT_SMALL,
+        height: TEXT.small,
         color: result.isRecord ? COLOR_ACCENT : COLOR_MUTED,
         text: result.isRecord ? this.text("new_best") : `${this.text("best")} ${this.bestText()}`,
       },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text("next"),
         onClick: () => this.playNextLevel(),
       },
-      { kind: "gap", height: MENU_GAP },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
-        height: MENU_BUTTON_HEIGHT,
+        height: TEXT.button,
         text: this.text("again"),
         onClick: () => this.restartGame(),
       },
@@ -416,17 +433,21 @@ Page({
       y: LAYOUT.tray.y,
       w: LAYOUT.tray.w,
       h: LAYOUT.tray.h,
-      radius: TRAY_RADIUS,
+      radius: LAYOUT.tray.radius,
       color: COLOR_TRAY,
     });
-    hmUI.createWidget(hmUI.widget.FILL_RECT, {
+    const board = hmUI.createWidget(hmUI.widget.FILL_RECT, {
       x: BOARD.x,
       y: BOARD.y,
       w: BOARD.w,
       h: BOARD.h,
-      radius: BOARD_RADIUS,
+      radius: LAYOUT.boardRadius,
       color: COLOR_BOARD,
     });
+    // The board listens for taps as well as the tiles standing on it. Which of
+    // the two a firmware delivers a touch to does not matter: both end up asking
+    // for the same block, and picking the same block twice is a no-op.
+    listen(board, (info) => this.tapBoard(info));
     hmUI.createWidget(hmUI.widget.FILL_RECT, {
       x: LAYOUT.gate.x,
       y: LAYOUT.gate.y,
@@ -451,19 +472,23 @@ Page({
     }
   },
 
+  // The portraits are cut for the 466px design and drawn scaled into whatever cell
+  // this screen ended up with, so one set of files serves every round watch the
+  // bundle ships for.
   createTile(id) {
     const block = this.state.game.blocks[id];
     const box = tileBox(BOARD, block.x, block.y, block.w, block.h);
-    const src = this.state.art[id];
-    return hmUI.createWidget(hmUI.widget.BUTTON, {
+    const tile = hmUI.createWidget(hmUI.widget.IMG, {
       x: box.x,
       y: box.y,
       w: box.w,
       h: box.h,
-      normal_src: src,
-      press_src: src,
-      click_func: () => this.select(id),
+      src: this.state.art[id],
+      auto_scale: true,
+      auto_scale_obj_fit: true,
     });
+    listen(tile, () => this.select(id));
+    return tile;
   },
 
   // A moved block is deleted and drawn again rather than nudged: it is one widget
@@ -488,14 +513,15 @@ Page({
       return;
     }
     const block = game.blocks[id];
-    const ring = selectionBox(tileBox(BOARD, block.x, block.y, block.w, block.h));
+    const tile = tileBox(BOARD, block.x, block.y, block.w, block.h);
+    const ring = selectionBox(tile, LAYOUT.selection.margin);
     this.state.selection = hmUI.createWidget(hmUI.widget.STROKE_RECT, {
       x: ring.x,
       y: ring.y,
       w: ring.w,
       h: ring.h,
-      radius: SELECTION_RADIUS,
-      line_width: SELECTION_WIDTH,
+      radius: LAYOUT.selection.radius,
+      line_width: LAYOUT.selection.width,
       color: COLOR_SELECTION,
     });
   },
@@ -549,7 +575,7 @@ Page({
       return;
     }
     const text = `${game.moves} / ${game.level.par}`;
-    this.state.counter = this.createText(LAYOUT.counter, TEXT_ROW, COLOR_TEXT, text);
+    this.state.counter = this.createText(LAYOUT.counter, TEXT.row, COLOR_TEXT, text);
   },
 
   // A vertical stack of texts and buttons, centred on the board under a dimmed
@@ -569,7 +595,7 @@ Page({
         y: BOARD.y,
         w: BOARD.w,
         h: BOARD.h,
-        radius: BOARD_RADIUS,
+        radius: LAYOUT.boardRadius,
         color: COLOR_BACKGROUND,
         alpha: PANEL_ALPHA,
       })

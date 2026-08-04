@@ -18,6 +18,7 @@ let display;
 let storage;
 let settings;
 let page = null;
+let screenSize = 466;
 
 async function boot(options = {}) {
   vi.resetModules();
@@ -26,6 +27,12 @@ async function boot(options = {}) {
   display = await import("./stubs/zos-display.mjs");
   storage = await import("./stubs/zos-storage.mjs");
   settings = await import("./stubs/zos-settings.mjs");
+  const device = await import("./stubs/zos-device.mjs");
+
+  // The page reads the screen size once, as it loads, so it has to be set before
+  // the import below - which is exactly why every boot starts a fresh graph.
+  screenSize = options.screenSize || 466;
+  device.setDeviceInfo({ width: screenSize, height: screenSize });
 
   for (const [key, value] of Object.entries(options.stored || {})) {
     storage.seed(key, value);
@@ -74,26 +81,37 @@ function pressIcon(src) {
   button.props.click_func();
 }
 
-// The stub device is 466px across, the same as the design.
-const BOARD = screenLayout(466).board;
+function board() {
+  return screenLayout(screenSize).board;
+}
 
-// The tiles are the buttons that carry a picture and no label. A tile that has
-// moved is drawn again, so it changes place in the widget list: the only reliable
-// way to find one is where it sits on the board.
+// The tiles are the scaled pictures on the board. A tile that has moved is drawn
+// again, so it changes place in the widget list: the only reliable way to find
+// one is where it sits on the board.
 function tiles() {
-  return ui
-    .buttons()
-    .filter((button) => typeof button.props.normal_src === "string" && !button.props.text)
-    .filter((button) => !/^(undo|menu)/.test(button.props.normal_src));
+  return ui.liveOfType(ui.widget.IMG);
 }
 
 function tileAt(block) {
-  const box = tileBox(BOARD, block.x, block.y, block.w, block.h);
+  const box = tileBox(board(), block.x, block.y, block.w, block.h);
   const found = tiles().find((tile) => tile.props.x === box.x && tile.props.y === box.y);
   if (!found) {
     throw new Error(`no tile at cell ${block.x},${block.y}`);
   }
   return found;
+}
+
+// Tap a widget the way the watch would: through the listener it registered.
+function tap(widget, info) {
+  const handler = ui.handlerFor(widget, ui.event.CLICK_DOWN);
+  if (!handler) {
+    throw new Error(`widget ${widget.id} (${widget.type}) is not listening for taps`);
+  }
+  handler(info || { x: widget.props.x + 1, y: widget.props.y + 1 });
+}
+
+function tapTile(block) {
+  tap(tileAt(block));
 }
 
 function counterText() {
@@ -112,7 +130,7 @@ function playOut(levelId) {
   const shadow = createGame(level);
   const line = solutionMoves(level);
   for (const step of line) {
-    tileAt(shadow.blocks[step.id]).props.click_func();
+    tapTile(shadow.blocks[step.id]);
     interaction.swipe(GESTURES[step.direction]);
     move(shadow, step.id, step.direction);
   }
@@ -232,7 +250,7 @@ describe("playing", () => {
 
     const soldier = firstOfKind(FIRST, "soldier");
     const before = tileAt(soldier).props.y;
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
 
     expect(counterText()).toBe(`1 / ${FIRST.par}`);
@@ -247,12 +265,12 @@ describe("playing", () => {
     const soldier = firstOfKind(FIRST, "soldier");
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
 
-    tileAt(hero).props.click_func();
+    tapTile(hero);
     const onHero = ui.liveOfType(ui.widget.STROKE_RECT);
     expect(onHero.length).toBe(1);
     expect(onHero[0].props.y).toBe(tileAt(hero).props.y - 1);
 
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     const onSoldier = ui.liveOfType(ui.widget.STROKE_RECT);
     expect(onSoldier.length).toBe(1);
     expect(onSoldier[0].props.y).toBe(tileAt(soldier).props.y - 1);
@@ -265,10 +283,10 @@ describe("playing", () => {
     // Tapping the block you are already pushing must not quietly let it go, or
     // the swipe that follows does nothing at all.
     const soldier = firstOfKind(FIRST, "soldier");
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
     const moved = { ...soldier, y: soldier.y + 1 };
-    tileAt(moved).props.click_func();
+    tapTile(moved);
     interaction.swipe(GESTURE_DOWN);
     expect(counterText()).toBe(`2 / ${FIRST.par}`);
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(1);
@@ -279,7 +297,7 @@ describe("playing", () => {
     press(en.play);
 
     const soldier = firstOfKind(FIRST, "soldier");
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
 
     // A block that moves is drawn again, which would put it over the ring; the
@@ -297,7 +315,7 @@ describe("playing", () => {
 
     // The general standing in the top left corner cannot go up or left, and the
     // hero is beside it.
-    tileAt(firstOfKind(FIRST, "general")).props.click_func();
+    tapTile(firstOfKind(FIRST, "general"));
     interaction.swipe(GESTURE_UP);
     interaction.swipe(GESTURE_LEFT);
     interaction.swipe(GESTURE_RIGHT);
@@ -316,7 +334,7 @@ describe("playing", () => {
 
     const soldier = firstOfKind(FIRST, "soldier");
     const before = tileAt(soldier).props.y;
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
     expect(counterText()).toBe(`1 / ${FIRST.par}`);
 
@@ -335,7 +353,7 @@ describe("playing", () => {
 
     const soldier = firstOfKind(FIRST, "soldier");
     const before = tileAt(soldier).props.y;
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
 
     press(en.restart);
@@ -442,7 +460,7 @@ describe("solving a board", () => {
 
     // The tiles are still there under the panel; tapping one must not start
     // selecting blocks on a game that is over.
-    tiles()[0].props.click_func();
+    tap(tiles()[0]);
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
     expect(ui.hasText(en.solved)).toBe(true);
   });
@@ -466,6 +484,101 @@ describe("solving a board", () => {
   );
 });
 
+// The store bundle carries a package for every round size Zeus knows, not just the
+// two the target names, so the game has to be playable on all of them.
+describe("every round screen the bundle ships for", () => {
+  for (const size of [360, 416, 454, 466, 480]) {
+    it(`plays a whole board on a ${size}px watch`, async () => {
+      await boot({ screenSize: size });
+      press(en.play);
+
+      const layout = screenLayout(size);
+      expect(tiles().length).toBe(FIRST.blocks.length);
+      // Every tile is drawn scaled into its cell rather than at the size of its
+      // file, and the board never reaches past the bezel.
+      for (const tile of tiles()) {
+        expect(tile.props.auto_scale, `${size}: auto_scale`).toBe(true);
+        expect(tile.props.w, `${size}: tile width`).toBeGreaterThan(0);
+        expect(tile.props.x, `${size}: tile x`).toBeGreaterThanOrEqual(layout.board.x);
+        expect(tile.props.x + tile.props.w, `${size}: tile right`).toBeLessThanOrEqual(
+          layout.board.x + layout.board.w
+        );
+      }
+
+      expect(playOut(FIRST.id)).toBe(FIRST.par);
+      expect(ui.hasText(en.solved), String(size)).toBe(true);
+      expect(storage.stored()[bestKey(FIRST.id)], String(size)).toBe(FIRST.par);
+    });
+  }
+
+  it("draws a bigger board on a bigger watch", async () => {
+    await boot({ screenSize: 360 });
+    press(en.play);
+    const small = tiles()[0].props.w;
+
+    await boot({ screenSize: 480 });
+    press(en.play);
+    expect(tiles()[0].props.w).toBeGreaterThan(small);
+  });
+});
+
+describe("picking up a block", () => {
+  it("works when the tap lands on the tile", async () => {
+    await boot();
+    press(en.play);
+    tapTile(firstOfKind(FIRST, "soldier"));
+    expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(1);
+  });
+
+  it("works when the tap lands on the board underneath instead", async () => {
+    await boot();
+    press(en.play);
+
+    // Not every firmware delivers a touch to the picture on top, so the board
+    // listens too and works out which cell was hit.
+    const soldier = firstOfKind(FIRST, "soldier");
+    const box = tileBox(board(), soldier.x, soldier.y, soldier.w, soldier.h);
+    const boardWidget = ui
+      .live()
+      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
+    tap(boardWidget, { x: box.x + 4, y: box.y + 4 });
+
+    const rings = ui.liveOfType(ui.widget.STROKE_RECT);
+    expect(rings.length).toBe(1);
+    expect(rings[0].props.y).toBe(box.y - screenLayout(screenSize).selection.margin);
+  });
+
+  it("ignores a tap on an empty cell", async () => {
+    await boot();
+    press(en.play);
+
+    const empty = tileBox(board(), 1, 4, 1, 1);
+    const boardWidget = ui
+      .live()
+      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
+    tap(boardWidget, { x: empty.x + 4, y: empty.y + 4 });
+    expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
+  });
+
+  it("survives both paths firing for one tap", async () => {
+    await boot();
+    press(en.play);
+
+    // A firmware that delivers the touch to the tile and to the board would pick
+    // the same block twice; that has to be a no-op, not a deselection.
+    const soldier = firstOfKind(FIRST, "soldier");
+    const box = tileBox(board(), soldier.x, soldier.y, soldier.w, soldier.h);
+    const boardWidget = ui
+      .live()
+      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
+    tapTile(soldier);
+    tap(boardWidget, { x: box.x + 4, y: box.y + 4 });
+
+    interaction.swipe(GESTURE_DOWN);
+    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+  });
+});
+
 describe("the screen it leaves behind", () => {
   it("never grows a pile of widgets as the screens come and go", async () => {
     await boot();
@@ -485,7 +598,7 @@ describe("the screen it leaves behind", () => {
     const afterStart = ui.live().length;
 
     const soldier = firstOfKind(FIRST, "soldier");
-    tileAt(soldier).props.click_func();
+    tapTile(soldier);
     for (let round = 0; round < 4; round++) {
       interaction.swipe(GESTURE_DOWN);
       interaction.swipe(GESTURE_UP);
