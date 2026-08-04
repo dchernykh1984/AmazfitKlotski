@@ -42,6 +42,9 @@ async function boot(options = {}) {
   }
   settings.setLanguage(options.language === undefined ? 2 : options.language);
   settings.setLanguageThrows(!!options.languageThrows);
+  for (const name of options.refuseEvents || []) {
+    ui.refuseEvent(name);
+  }
 
   page = null;
   globalThis.Page = (config) => {
@@ -101,13 +104,37 @@ function tileAt(block) {
   return found;
 }
 
-// Tap a widget the way the watch would: through the listener it registered.
+// Tap a widget the way a finger does: down and up again in the same place.
 function tap(widget, info) {
-  const handler = ui.handlerFor(widget, ui.event.CLICK_DOWN);
-  if (!handler) {
+  const at = info || { x: widget.props.x + 1, y: widget.props.y + 1 };
+  const press = ui.handlerFor(widget, ui.event.CLICK_DOWN);
+  const release = ui.handlerFor(widget, ui.event.CLICK_UP);
+  if (!press && !release) {
     throw new Error(`widget ${widget.id} (${widget.type}) is not listening for taps`);
   }
-  handler(info || { x: widget.props.x + 1, y: widget.props.y + 1 });
+  if (press) {
+    press(at);
+  }
+  if (release) {
+    release(at);
+  }
+}
+
+// Put a finger down on a widget and take it up somewhere else, which is how a
+// swipe begins and ends.
+function dragFrom(widget, from, to) {
+  const press = ui.handlerFor(widget, ui.event.CLICK_DOWN);
+  const release = ui.handlerFor(widget, ui.event.CLICK_UP);
+  if (press) {
+    press(from);
+  }
+  if (release) {
+    release(to);
+  }
+}
+
+function boardWidget() {
+  return ui.live().find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
 }
 
 function tapTile(block) {
@@ -538,10 +565,7 @@ describe("picking up a block", () => {
     // listens too and works out which cell was hit.
     const soldier = firstOfKind(FIRST, "soldier");
     const box = tileBox(board(), soldier.x, soldier.y, soldier.w, soldier.h);
-    const boardWidget = ui
-      .live()
-      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
-    tap(boardWidget, { x: box.x + 4, y: box.y + 4 });
+    tap(boardWidget(), { x: box.x + 4, y: box.y + 4 });
 
     const rings = ui.liveOfType(ui.widget.STROKE_RECT);
     expect(rings.length).toBe(1);
@@ -553,10 +577,7 @@ describe("picking up a block", () => {
     press(en.play);
 
     const empty = tileBox(board(), 1, 4, 1, 1);
-    const boardWidget = ui
-      .live()
-      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
-    tap(boardWidget, { x: empty.x + 4, y: empty.y + 4 });
+    tap(boardWidget(), { x: empty.x + 4, y: empty.y + 4 });
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
   });
 
@@ -568,11 +589,49 @@ describe("picking up a block", () => {
     // the same block twice; that has to be a no-op, not a deselection.
     const soldier = firstOfKind(FIRST, "soldier");
     const box = tileBox(board(), soldier.x, soldier.y, soldier.w, soldier.h);
-    const boardWidget = ui
-      .live()
-      .find((w) => w.type === ui.widget.FILL_RECT && w.props.w === board().w);
     tapTile(soldier);
-    tap(boardWidget, { x: box.x + 4, y: box.y + 4 });
+    tap(boardWidget(), { x: box.x + 4, y: box.y + 4 });
+
+    interaction.swipe(GESTURE_DOWN);
+    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+  });
+
+  it("does not let the start of a swipe steal the block that was picked up", async () => {
+    await boot();
+    press(en.play);
+
+    // Pick up the soldier, then start a swipe with the finger over the hero. The
+    // touch that opens a swipe must not change what is picked up, or the wrong
+    // block slides and the counter charges the player for it.
+    const hero = firstOfKind(FIRST, "hero");
+    const soldier = firstOfKind(FIRST, "soldier");
+    tapTile(soldier);
+
+    const from = tileBox(board(), hero.x, hero.y, hero.w, hero.h);
+    dragFrom(
+      tileAt(hero),
+      { x: from.x + 4, y: from.y + 4 },
+      { x: from.x + 4, y: from.y + 4 + board().cell }
+    );
+    interaction.swipe(GESTURE_DOWN);
+
+    // The soldier moved, not the hero the finger happened to land on.
+    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(tileAt({ ...soldier, y: soldier.y + 1 })).toBeTruthy();
+    expect(tileAt(hero)).toBeTruthy();
+  });
+
+  it("still picks a block up on a watch that has no release event", async () => {
+    // Some firmware wires up the press but not the release. Selecting on the
+    // press is worse - a swipe can steal the pick - but it is still a playable
+    // game, where refusing to select anything would not be.
+    await boot({ refuseEvents: ["CLICK_UP"] });
+    press(en.play);
+
+    const soldier = firstOfKind(FIRST, "soldier");
+    const tile = tileAt(soldier);
+    ui.handlerFor(tile, ui.event.CLICK_DOWN)({ x: tile.props.x + 2, y: tile.props.y + 2 });
+    expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(1);
 
     interaction.swipe(GESTURE_DOWN);
     expect(counterText()).toBe(`1 / ${FIRST.par}`);

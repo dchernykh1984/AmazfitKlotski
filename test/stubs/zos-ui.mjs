@@ -20,6 +20,7 @@ export const event = { CLICK_DOWN: "CLICK_DOWN", CLICK_UP: "CLICK_UP", MOVE: "MO
 
 let widgets = [];
 let nextId = 1;
+let refused = {};
 
 export function createWidget(type, props) {
   if (!Object.prototype.hasOwnProperty.call(widget, type)) {
@@ -40,6 +41,10 @@ export function createWidget(type, props) {
     addEventListener(name, callback) {
       if (!Object.prototype.hasOwnProperty.call(event, name)) {
         throw new Error(`unknown event ${name}`);
+      }
+      if (refused[name]) {
+        // Stands in for a firmware that does not wire this event up.
+        throw new Error(`${name} is not supported on this device`);
       }
       if (typeof callback !== "function") {
         throw new Error("addEventListener needs a callback");
@@ -69,6 +74,13 @@ export function deleteWidget(target) {
 export function reset() {
   widgets = [];
   nextId = 1;
+  refused = {};
+}
+
+// Make this device refuse to wire up an event, the way a firmware without it
+// would, so the page's fallback can be driven.
+export function refuseEvent(name) {
+  refused[name] = true;
 }
 
 // Everything currently on screen, in the order it was drawn.
