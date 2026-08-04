@@ -5,9 +5,9 @@ name: Build and Distribute
 # uploading the .zab to the Zepp App Store (with the listing, screenshots and
 # release notes) stays manual - this just produces the artifact to upload.
 #
-# NOTE: this needs the app code (app.json etc.). Until the app is added, a release
-# build will fail at "zeus build"; the workflow only runs on a release or manual
-# dispatch, never on a pull request, so it does not block PR CI.
+# NOTE: this builds the real app (app.json, page/, assets/). It only runs on a
+# release or a manual dispatch, never on a pull request, so a Zeus problem cannot
+# block PR CI.
 on:
   workflow_call:
     inputs:
