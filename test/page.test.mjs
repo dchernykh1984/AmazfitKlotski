@@ -3,6 +3,7 @@ import { DOWN, LEFT, RIGHT, UP, createGame, move } from "../lib/klotski.js";
 import { screenLayout, tileBox } from "../lib/layout.js";
 import { LEVELS, levelById, nextLevel } from "../lib/levels.js";
 import { LEVEL_KEY, bestKey } from "../lib/scores.js";
+import { assignArt } from "../lib/pieces.js";
 import { LABELS } from "../lib/i18n/labels.js";
 import { GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT, GESTURE_UP } from "./stubs/zos-interaction.mjs";
 import { solutionMoves } from "./helpers/solver.mjs";
@@ -258,6 +259,8 @@ describe("playing", () => {
     press(en.play);
 
     expect(tiles().length).toBe(FIRST.blocks.length);
+    // Every block wears its own portrait: a board of blank tiles is not a board.
+    expect(tiles().map((tile) => tile.props.src)).toEqual(assignArt(createGame(FIRST).blocks));
     expect(counterText()).toBe(`0 / ${FIRST.par}`);
     expect(ui.buttonWithText(en.restart)).toBeTruthy();
     expect(ui.buttonWithText(en.play)).toBeNull();
