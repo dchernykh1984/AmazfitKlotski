@@ -34,27 +34,27 @@ function restore(game, positions) {
   }
 }
 
-// The fewest single-cell moves that solve the level, or null when it cannot be
-// solved at all. `limit` caps how many positions are expanded so a broken level
-// fails the test instead of hanging it.
-export function shortestSolution(level, limit = 400000) {
+// A shortest solution as the list of moves that plays it, or null when the level
+// cannot be solved at all. `limit` caps how many positions are expanded so a
+// broken level fails the test instead of hanging it.
+export function solutionMoves(level, limit = 400000) {
   const game = createGame(level);
   if (isSolved(game)) {
-    return 0;
+    return [];
   }
 
-  const start = snapshot(game);
   const seen = new Set([positionKey(game)]);
-  let frontier = [start];
-  let depth = 0;
+  // Each entry carries the position and the move that reached it, so the winning
+  // line can be read back without keeping a copy of the whole path per node.
+  let frontier = [{ positions: snapshot(game), from: -1, move: null }];
+  const tree = [];
   let expanded = 0;
 
   while (frontier.length > 0) {
     const next = [];
-    depth++;
     for (let i = 0; i < frontier.length; i++) {
-      restore(game, frontier[i]);
-      const positions = frontier[i];
+      const node = frontier[i];
+      const at = tree.push(node) - 1;
       expanded++;
       if (expanded > limit) {
         throw new Error(`solver gave up after ${limit} positions`);
@@ -62,26 +62,38 @@ export function shortestSolution(level, limit = 400000) {
       for (let id = 0; id < game.blocks.length; id++) {
         for (let d = 0; d < DIRECTIONS.length; d++) {
           const direction = DIRECTIONS[d];
+          restore(game, node.positions);
           if (!canMove(game, id, direction)) {
             continue;
           }
           move(game, id, direction);
           const key = positionKey(game);
           if (!seen.has(key)) {
+            const child = { positions: snapshot(game), from: at, move: { id, direction } };
             if (isSolved(game)) {
-              return depth;
+              const line = [child.move];
+              for (let step = child.from; step > 0; step = tree[step].from) {
+                line.unshift(tree[step].move);
+              }
+              return line;
             }
             seen.add(key);
-            next.push(snapshot(game));
+            next.push(child);
           }
           undo(game);
-          restore(game, positions);
         }
       }
     }
     frontier = next;
   }
   return null;
+}
+
+// The fewest single-cell moves that solve the level, or null when it cannot be
+// solved at all.
+export function shortestSolution(level, limit = 400000) {
+  const line = solutionMoves(level, limit);
+  return line === null ? null : line.length;
 }
 
 // How many distinct positions the level can reach. A level whose blocks are
