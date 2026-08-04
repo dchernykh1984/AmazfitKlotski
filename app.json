@@ -1,8 +1,8 @@
 {
   "configVersion": "v3",
   "app": {
-    "appId": 1000001,
-    "appName": "Klotski",
+    "appId": 1122455,
+    "appName": "Block Escape",
     "appType": "app",
     "version": {
       "code": 100,
@@ -41,10 +41,10 @@
   },
   "i18n": {
     "en-US": {
-      "appName": "Klotski"
+      "appName": "Block Escape"
     },
     "ru-RU": {
-      "appName": "Klotski"
+      "appName": "Block Escape"
     }
   },
   "defaultLanguage": "en-US"

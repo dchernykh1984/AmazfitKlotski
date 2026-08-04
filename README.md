@@ -1,7 +1,8 @@
 # Amazfit Klotski
 
-**Klotski** - the sliding block puzzle also known as Huarong Pass - as a **Zepp OS
-mini app** for round Amazfit watches. Ten blocks are packed into a 4x5 tray with
+**Block Escape** - Klotski, the sliding block puzzle also known as Huarong Pass -
+as a **Zepp OS mini app** for round Amazfit watches. Ten blocks are packed into a
+4x5 tray with
 barely any room to move; slide them, without lifting or turning any of them, until
 the big 2x2 commander can leave through the gate at the bottom. Everything runs on
 the watch: no phone, no network, no account.
@@ -88,12 +89,12 @@ and reacts to taps and swipes. The tests include a breadth-first solver that
 re-derives the par of every bundled board, so a mistyped board or a wrong par fails
 the build rather than the player.
 
-### Before it runs on a watch
+### In the Zepp store
 
-`app.json` carries the placeholder **`"appId": 1000001`**. Register the app in the
-[Zepp developer console](https://console.zepp.com/) and put the real id there first:
-the dev preview is cloud-mediated, and an unregistered appId makes the watch install
-the app but silently refuse to launch its screen.
+The app is registered in the [Zepp developer console](https://console.zepp.com/) as
+**Block Escape**, app id **1122455**, and `app.json` carries that id. It has to: the
+dev preview is cloud-mediated, and an unregistered appId makes the watch install the
+app but silently refuse to launch its screen. The repository keeps its own name.
 
 ## Pre-commit hooks (contributors)
 

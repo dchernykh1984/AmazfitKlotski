@@ -4,12 +4,29 @@ import { fileURLToPath } from "node:url";
 import { ICON_ART } from "../lib/pieces.js";
 import { CELL } from "../lib/layout.js";
 import { BOARD_COLS, BOARD_ROWS } from "../lib/levels.js";
+import { LABELS } from "../lib/i18n/labels.js";
+import { LANGUAGES } from "../lib/i18n/index.js";
 
 const root = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 const appJson = JSON.parse(readFileSync(root("app.json"), "utf8"));
 const packageJson = JSON.parse(readFileSync(root("package.json"), "utf8"));
 
 describe("app.json", () => {
+  it("carries the app id the game is registered under in the Zepp store", () => {
+    // Registered as "Block Escape". An unregistered or placeholder id installs on
+    // the watch but silently refuses to launch, so this one is pinned.
+    expect(appJson.app.appId).toBe(1122455);
+  });
+
+  it("shows the store name on the start screen too", () => {
+    for (const lang of LANGUAGES) {
+      expect(LABELS[lang].title, lang).toBe(appJson.app.appName);
+    }
+    for (const locale of Object.keys(appJson.i18n)) {
+      expect(appJson.i18n[locale].appName, locale).toBe(appJson.app.appName);
+    }
+  });
+
   it("is built for round screens only", () => {
     const platforms = appJson.targets.common.platforms;
     expect(platforms.length).toBeGreaterThan(0);
