@@ -1,0 +1,51 @@
+{
+  "configVersion": "v3",
+  "app": {
+    "appId": 1000001,
+    "appName": "Klotski",
+    "appType": "app",
+    "version": {
+      "code": 100,
+      "name": "0.1.0"
+    },
+    "icon": "icon.png",
+    "vender": "dchernykh1984",
+    "description": "The classic sliding block puzzle for round Amazfit watches: tap a block, swipe to slide it, and free the commander through the gate."
+  },
+  "permissions": ["data:os.device.info", "device:os.local_storage"],
+  "runtime": {
+    "apiVersion": {
+      "compatible": "3.0.0",
+      "target": "3.0.0",
+      "minVersion": "3.0"
+    }
+  },
+  "targets": {
+    "common": {
+      "module": {
+        "page": {
+          "pages": ["page/index"]
+        }
+      },
+      "platforms": [
+        {
+          "st": "r",
+          "dw": 466
+        },
+        {
+          "st": "r",
+          "dw": 480
+        }
+      ]
+    }
+  },
+  "i18n": {
+    "en-US": {
+      "appName": "Klotski"
+    },
+    "ru-RU": {
+      "appName": "Klotski"
+    }
+  },
+  "defaultLanguage": "en-US"
+}
