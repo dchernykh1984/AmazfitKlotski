@@ -14,6 +14,7 @@ import {
 } from "../lib/layout.js";
 import { BOARD_COLS, BOARD_ROWS, GOAL, LEVELS } from "../lib/levels.js";
 import { KINDS, createGame } from "../lib/klotski.js";
+import { CONTROL_ART, allArt } from "../lib/pieces.js";
 
 // Every round screen the store bundle Zeus builds actually carries a package for.
 // The app.json target names 466 and 480, but Zeus expands a round target to every
@@ -99,6 +100,20 @@ describe("every screen the bundle ships for", () => {
           expect(overlaps(a, b), `${size}: ${CONTROLS[i]} over ${CONTROLS[j]}`).toBe(false);
         }
       }
+    }
+  });
+
+  it("keeps the icon buttons at exactly the size their pictures are cut at", () => {
+    // A button draws its picture at the size of the file, so this box may not
+    // scale away from the art the way a tile's does: the glyph would spill over
+    // the tray and part of it would stop being tappable.
+    const icon = allArt().find((entry) => entry.file === CONTROL_ART.undo.normal);
+    for (const size of SHIPPED_SIZES) {
+      const layout = screenLayout(size);
+      expect(layout.undo.w, `${size}/undo`).toBe(icon.size.w);
+      expect(layout.undo.h, `${size}/undo`).toBe(icon.size.h);
+      expect(layout.menu.w, `${size}/menu`).toBe(icon.size.w);
+      expect(layout.menu.h, `${size}/menu`).toBe(icon.size.h);
     }
   });
 
