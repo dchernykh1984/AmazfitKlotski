@@ -6,13 +6,16 @@
     "appType": "app",
     "version": {
       "code": 201,
-      "name": "0.2.1"
+      "name": "0.2.2"
     },
     "icon": "icon.png",
     "vender": "dchernykh1984",
     "description": "The classic sliding block puzzle for round Amazfit watches: tap a block, swipe to slide it, and free the commander through the gate."
   },
-  "permissions": ["data:os.device.info", "device:os.local_storage"],
+  "permissions": [
+    "data:os.device.info",
+    "device:os.local_storage"
+  ],
   "runtime": {
     "apiVersion": {
       "compatible": "3.0.0",
@@ -24,7 +27,9 @@
     "common": {
       "module": {
         "page": {
-          "pages": ["page/index"]
+          "pages": [
+            "page/index"
+          ]
         }
       },
       "platforms": [
