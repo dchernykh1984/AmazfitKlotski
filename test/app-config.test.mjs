@@ -8,26 +8,7 @@ import { LANGUAGES } from "../lib/i18n/index.js";
 
 const root = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 const appJson = JSON.parse(readFileSync(root("app.json"), "utf8"));
-const packageJson = JSON.parse(readFileSync(root("package.json"), "utf8"));
 const releaseWorkflow = readFileSync(root(".github/workflows/build-and-distribute.yml"), "utf8");
-
-function versionParts(version) {
-  return String(version)
-    .split(".")
-    .map((part) => Number(part));
-}
-
-// -1, 0 or 1, the way a comparator reads.
-function compareVersions(left, right) {
-  const a = versionParts(left);
-  const b = versionParts(right);
-  for (let i = 0; i < 3; i++) {
-    if (a[i] !== b[i]) {
-      return a[i] < b[i] ? -1 : 1;
-    }
-  }
-  return 0;
-}
 
 describe("app.json", () => {
   it("carries the app id the game is registered under in the Zepp store", () => {
@@ -81,30 +62,12 @@ describe("app.json", () => {
     expect(appJson.permissions.sort()).toEqual(["data:os.device.info", "device:os.local_storage"]);
   });
 
-  it("keeps its version code in step with its version name", () => {
-    // The store needs an ever-increasing integer next to the semver, and the
-    // release build derives one from the other in exactly this way.
-    expect(appJson.app.version.name).toMatch(/^\d+\.\d+\.\d+$/);
-    const [major, minor, patch] = versionParts(appJson.app.version.name);
-    expect(appJson.app.version.code).toBe(major * 10000 + minor * 100 + patch);
-  });
-
-  it("never runs ahead of the version release-please owns", () => {
-    // package.json is the version of record: release-please bumps it and leaves
-    // app.json alone, because its JSON updater reformats app.json in a way
-    // Prettier rejects. So between a release PR being opened and the bundle being
-    // built, app.json is legitimately a release behind - but it must never be in
-    // front, which would ship a version that was never released.
-    expect(compareVersions(appJson.app.version.name, packageJson.version)).toBeLessThanOrEqual(0);
-  });
-
   it("is brought up to date by the release build", () => {
-    // What makes the drift above safe: the workflow that builds the .zab writes
-    // the package.json version into app.json first. Without that step a release
-    // would ship the old version to the store.
-    expect(releaseWorkflow).toContain(".app.version.name");
-    expect(releaseWorkflow).toContain(".app.version.code");
-    expect(releaseWorkflow).toContain("require('./package.json').version");
+    // The two version numbers themselves are app-version.test.mjs's business.
+    // What belongs here is that the workflow building the .zab still runs the
+    // sync first: without that step a release would ship the old version to the
+    // store, however well the script works on its own.
+    expect(releaseWorkflow).toContain("npm run version:sync");
   });
 
   it("declares an app name for every language it lists", () => {
