@@ -126,7 +126,11 @@ describe("running the script", () => {
   }
 
   const run = (dir, ...args) =>
+    // Run it from inside the throwaway checkout. Without a cwd the child inherits
+    // vitest's, which is this repository - and a script that ever resolved its
+    // files from the working directory would edit the real app.json.
     spawnSync(process.execPath, [join(dir, "scripts/sync-app-version.mjs"), ...args], {
+      cwd: dir,
       encoding: "utf8",
     });
 
