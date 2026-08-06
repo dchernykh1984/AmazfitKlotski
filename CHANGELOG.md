@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.1...amazfit-klotski-v0.2.2) (2026-08-06)
+
+
+### Bug Fixes
+
+* report the released version on the watch instead of 0.1.0 ([e72b3c1](https://github.com/dchernykh1984/AmazfitKlotski/commit/e72b3c18dc49ec115e88aa982cee0d232f7cde7a))
+
 ## [0.2.1](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.0...amazfit-klotski-v0.2.1) (2026-08-04)
 
 
