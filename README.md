@@ -85,6 +85,7 @@ page/index.js            the watch screen: drawing, taps and swipes
 page/index.r.layout.js   the layout module Zepp OS requires per page
 utils/config/            device.js (screen size), constants.js (colours, type)
 assets/common.r/         the block faces, the button icons and the app icon
+scripts/                 sync-app-version.mjs: the two store version numbers
 test/                    Vitest unit tests, including a breadth-first solver
 ```
 
