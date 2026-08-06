@@ -3,7 +3,8 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "amazfit-klotski"
+      "package-name": "amazfit-klotski",
+      "extra-files": [{ "type": "json", "path": "app.json", "jsonpath": "$.app.version.name" }]
     }
   }
 }
