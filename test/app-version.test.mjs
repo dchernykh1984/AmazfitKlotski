@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { afterEach, describe, it, expect } from "vitest";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { syncedAppJson, versionCode } from "../scripts/sync-app-version.mjs";
@@ -86,6 +88,72 @@ describe("writing the version into app.json", () => {
   it("is idempotent", () => {
     const once = syncedAppJson(APP, "1.2.3");
     expect(syncedAppJson(once, "1.2.3")).toBe(once);
+  });
+});
+
+// Everything above imports two helpers; neither npm script is made of only
+// those. A check that always succeeds, or a sync that never writes the file,
+// leaves every test above green and still ships the previous release's number
+// to the store - so the script is run here as the release runs it, as a process
+// with an exit code. Against a throwaway copy: it writes the app.json next to
+// itself, and that must never be this repository's.
+describe("running the script", () => {
+  const sandboxes = [];
+
+  afterEach(() => {
+    while (sandboxes.length > 0) {
+      rmSync(sandboxes.pop(), { recursive: true, force: true });
+    }
+  });
+
+  // The two files the script reads, and nothing else it needs.
+  function sandbox(releaseVersion, appName, appCode) {
+    const dir = mkdtempSync(join(tmpdir(), "app-version-"));
+    sandboxes.push(dir);
+    mkdirSync(join(dir, "scripts"));
+    cpSync(join(ROOT, "scripts/sync-app-version.mjs"), join(dir, "scripts/sync-app-version.mjs"));
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ version: releaseVersion }) + "\n");
+    const app = read("app.json");
+    app.app.version = { code: appCode, name: appName };
+    writeFileSync(join(dir, "app.json"), JSON.stringify(app, null, 2) + "\n");
+    return dir;
+  }
+
+  const run = (dir, ...args) =>
+    spawnSync(process.execPath, [join(dir, "scripts/sync-app-version.mjs"), ...args], {
+      encoding: "utf8",
+    });
+
+  const versionIn = (dir) => JSON.parse(readFileSync(join(dir, "app.json"), "utf8")).app.version;
+
+  it("fails the check when the two files name different versions", () => {
+    const failed = run(sandbox("0.3.0", "0.2.1", 201), "--check");
+    expect(failed.status).toBe(1);
+    expect(failed.stderr).toContain("version:sync");
+  });
+
+  it("checks without writing, even when the check fails", () => {
+    const dir = sandbox("0.3.0", "0.2.1", 201);
+    run(dir, "--check");
+    expect(versionIn(dir)).toEqual({ code: 201, name: "0.2.1" });
+  });
+
+  // The state release-please leaves on a release PR: it wrote the name and
+  // cannot compute the code. Failing here would block every release.
+  it("passes the check when only the code is a release behind", () => {
+    expect(run(sandbox("0.2.2", "0.2.2", 201), "--check").status).toBe(0);
+  });
+
+  // What the release build is for, and what nothing else now checks: the bundle
+  // it packs carries the code belonging to the name, however stale app.json was.
+  it("writes both numbers when it is not checking", () => {
+    const dir = sandbox("0.2.2", "0.2.2", 201);
+    expect(run(dir).status).toBe(0);
+    expect(versionIn(dir)).toEqual({ code: 202, name: "0.2.2" });
+  });
+
+  it("stops the build rather than shipping a version it cannot pack", () => {
+    expect(run(sandbox("0.100.0", "0.99.0", 9900)).status).not.toBe(0);
   });
 });
 
