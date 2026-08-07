@@ -2,14 +2,14 @@
 
 **Block Escape** - Klotski, the sliding block puzzle also known as Huarong Pass -
 as a **Zepp OS mini app** for round Amazfit watches. Ten blocks are packed into a
-4x5 tray with
-barely any room to move; slide them, without lifting or turning any of them, until
-the big 2x2 commander can leave through the gate at the bottom. Everything runs on
-the watch: no phone, no network, no account.
+4x5 tray with barely any room to move; slide them, without lifting or turning any
+of them, until the big 2x2 commander can leave through the gate at the bottom.
+Everything runs on the watch: no phone, no network, no account.
 
-- **Board** - the classic 4x5 tray, drawn at a fixed cell size and centred on the
-  round screen, with the move counter in the cap above it and the controls in the
-  margins beside and below it.
+- **Board** - the classic 4x5 tray, scaled to the round screen and centred, with
+  the move counter in the cap above it and the controls in the margins beside and
+  below it. The counter is a plain count of the moves you have spent; there is no
+  allowance to run out of and no way to lose.
 - **Controls** - tap a block to pick it up, then swipe up / down / left / right to
   slide it one cell. The selected block keeps the gold ring, so a run of swipes
   pushes the same block along; tap another block to move the ring to it. Swipes
@@ -18,10 +18,20 @@ the watch: no phone, no network, no account.
 - **Undo, restart, menu** - undo takes back one move (and the counter with it),
   restart puts the board back as it started, and the menu button pauses over the
   board so the position is still there when you come back.
-- **Six boards** - a ladder from a seven-move warm-up to the classic Huarong Pass,
-  which cannot be solved in fewer than 116 moves. Each board shows its par next to
-  your move count, and keeps its own record in on-watch storage. The board you
-  played last is the one that opens next time.
+- **Six boards, numbered 1 to 6** - a ladder from a seven-move warm-up to the
+  classic Huarong Pass, which cannot be solved in fewer than 116 moves. The number
+  is the whole name: the list is ordered by difficulty, so the number says more
+  than any name could, and it needs no translating. The board you played last is
+  the one that opens next time.
+- **Records** - one per board, kept in on-watch storage and shown on their own
+  screen, a board at a time, paged with a swipe. Each shows the moves and the
+  clock of your best game and the fewest moves the board can possibly be solved
+  in. Fewer moves is what makes a record; the clock only separates two games that
+  took the same number of moves.
+- **The clock** - a game is timed from the moment the board opens to the moment
+  the commander is out. Finish minus start: wandering off to the menu does not
+  stop it. It is not shown while you play - the puzzle is the point, not the
+  hurry - only when you solve it and in the records.
 - **Block faces** - every block wears a portrait from a Qing dynasty album of
   Peking opera characters, so the commander, the four generals and the four
   soldiers are all told apart at a glance. The album is CC0 - see
@@ -75,11 +85,13 @@ app.json                 manifest (round 466 + 480, one page module)
 app.js                   app entry
 lib/                     PURE, unit-tested logic (no Zepp OS imports)
   klotski.js             the rule set: blocks, legal slides, undo, solved
-  levels.js              the six boards, written as ASCII pictures, plus their par
+  levels.js              the six boards as ASCII pictures, numbered, with their
+                         shortest possible game
   layout.js              where the board, counter and buttons sit on the screen
   round-geometry.js      chord maths that keeps text and buttons off the bezel
   pieces.js              which portrait goes on which block
-  scores.js              the persisted record, per board
+  clock.js               how long a game took, and how to write it
+  scores.js              the record per board: moves first, then the clock
   i18n/                  keys.js (the contract), labels.js (11 tables), index.js
 page/index.js            the watch screen: drawing, taps and swipes
 page/index.r.layout.js   the layout module Zepp OS requires per page
@@ -92,8 +104,10 @@ test/                    Vitest unit tests, including a breadth-first solver
 The split is deliberate: every rule and every measurement lives in `lib/`, where a
 test can reach it without a watch, and `page/index.js` only turns that into widgets
 and reacts to taps and swipes. The tests include a breadth-first solver that
-re-derives the par of every bundled board, so a mistyped board or a wrong par fails
-the build rather than the player.
+re-derives the shortest possible game for every bundled board, so a mistyped board
+or a wrong minimum fails the build rather than the player. The page tests drive the
+real screen against stubbed `@zos/*` modules, with a clock they control, so a game
+can be made to take an hour without waiting for one.
 
 ### In the Zepp store
 
