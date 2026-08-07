@@ -62,6 +62,12 @@ describe("the bundled levels", () => {
     }
   });
 
+  it("are numbered 1, 2, 3 ... in the order they are played", () => {
+    // The number is the board's whole name and its storage key, so it has to be
+    // its position in the ladder and nothing else.
+    expect(LEVELS.map((level) => level.id)).toEqual(LEVELS.map((_, index) => index + 1));
+  });
+
   it("have unique ids", () => {
     const ids = LEVELS.map((level) => level.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -154,5 +160,28 @@ describe("walking the level list", () => {
     expect(levelById(undefined).id).toBe(LEVELS[0].id);
     expect(nextLevel("gone").id).toBe(LEVELS[0].id);
     expect(previousLevel("gone").id).toBe(LEVELS[LEVELS.length - 1].id);
+    // A board number that does not exist yet - the watch may have been left on a
+    // board that a later version removed, or an earlier one never had.
+    expect(levelById(LEVELS.length + 1).id).toBe(LEVELS[0].id);
+    expect(levelById(0).id).toBe(LEVELS[0].id);
+  });
+
+  it("recognises a board number that storage handed back as text", () => {
+    // Zepp OS storage gives back whatever it feels like: "3" is the same board
+    // as 3, and reading it as a miss would silently reset the player's choice.
+    for (const level of LEVELS) {
+      expect(levelById(String(level.id)).id, String(level.id)).toBe(level.id);
+      expect(levelIndex(String(level.id)), String(level.id)).toBe(level.id - 1);
+    }
+    expect(nextLevel("1").id).toBe(LEVELS[1].id);
+    expect(previousLevel("2").id).toBe(LEVELS[0].id);
+  });
+
+  it("refuses a number that only looks like one", () => {
+    expect(levelIndex(1.5)).toBe(-1);
+    expect(levelIndex("1.5")).toBe(-1);
+    expect(levelIndex(null)).toBe(-1);
+    expect(levelIndex("")).toBe(-1);
+    expect(levelIndex([])).toBe(-1);
   });
 });
