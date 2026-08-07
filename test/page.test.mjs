@@ -589,6 +589,31 @@ describe("solving a board", () => {
     expect(moves).toBe(FIRST.par);
   });
 
+  it("keeps that record through a walk back out to the start screen", async () => {
+    // Going back to the level list re-reads the record from storage, and on a
+    // watch that refused the write there is nothing there to read. The session's
+    // own copy has to answer instead - otherwise the record vanishes from the
+    // records screen and, worse, a strictly slower replay is crowned a new one.
+    setClock(1_700_000_000_000);
+    await boot({ storageFails: "write" });
+    press(en.play);
+    tick(60_000);
+    const moves = playOut(FIRST.id);
+
+    press(en.again);
+    pressIcon("menu.png");
+    press(en.levels);
+    press(en.records);
+    expect(ui.texts()).toContain(`${en.moves} ${moves}`);
+    expect(ui.texts()).toContain(`${en.time} 1:00`);
+
+    press(en.back);
+    press(en.play);
+    tick(600_000);
+    playOut(FIRST.id);
+    expect(ui.hasText(en.new_best)).toBe(false);
+  });
+
   it("takes the record when the same game is played faster", async () => {
     setClock(1_700_000_000_000);
     await boot();

@@ -65,7 +65,13 @@ const memory = {};
 function readValue(storage, key) {
   if (storage) {
     try {
-      return storage.getItem(key);
+      const stored = storage.getItem(key);
+      if (stored !== undefined && stored !== null) {
+        return stored;
+      }
+      // Nothing written down under that key. On a watch whose storage reads but
+      // refuses to write - a full one - that is exactly where a record set this
+      // session lives, so fall through rather than reporting it lost.
     } catch {
       // Fall through to the in-memory copy.
     }
