@@ -876,6 +876,22 @@ describe("the records", () => {
     expect(shown().time).toBe(`${en.time} ${en.none}`);
   });
 
+  it("never shows a time for a board it says has no record", async () => {
+    // The two halves live in separate storage entries, so they can in principle
+    // disagree - a corrupt count beside a readable clock. A duration for a game
+    // the same screen says was never finished is nonsense, so the pair is read
+    // as a pair.
+    for (const moves of ["nonsense", -5, 0, undefined]) {
+      const stored = { [bestTimeKey(FIRST.id)]: 261_000 };
+      if (moves !== undefined) {
+        stored[bestKey(FIRST.id)] = moves;
+      }
+      await openRecords({ stored });
+      expect(shown().moves, JSON.stringify(moves)).toBe(`${en.moves} ${en.none}`);
+      expect(shown().time, JSON.stringify(moves)).toBe(`${en.time} ${en.none}`);
+    }
+  });
+
   it("pages through every board and wraps round, in both directions", async () => {
     await openRecords();
     expect(shown().level).toBe(levelName(FIRST));
