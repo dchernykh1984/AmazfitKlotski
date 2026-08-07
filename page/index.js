@@ -36,7 +36,7 @@ import {
   normalizeMoves,
   updateBest,
 } from "../lib/scores.js";
-import { normalizeElapsed } from "../lib/clock.js";
+import { elapsedBetween, formatElapsed, normalizeElapsed } from "../lib/clock.js";
 import { SCREEN_SIZE } from "../utils/config/device.js";
 import {
   BRIGHT_TIME_MS,
@@ -81,6 +81,18 @@ function writeValue(storage, key, value) {
     } catch {
       // The in-memory copy above still holds for this session.
     }
+  }
+}
+
+// The wall clock, in milliseconds, or 0 when this watch has none to offer. A
+// game played on a watch that cannot tell the time is still a game; it simply
+// goes into the records without a duration.
+function now() {
+  try {
+    const reading = Date.now();
+    return isFinite(reading) && reading > 0 ? reading : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -163,6 +175,10 @@ Page({
     art: [],
     selected: null,
     storage: null,
+    // When the board opened, by the watch's clock. A game is timed from here to
+    // the moment the hero is out - finish minus start, with nothing in between
+    // stopping it.
+    startedAt: 0,
     destroyed: false,
     // Widgets, grouped by lifetime: the tray lives as long as the page, the block
     // tiles as long as a game, and the head-up display and the menus only as long
@@ -357,6 +373,7 @@ Page({
     this.clearMenu();
     this.state.screen = "playing";
     this.state.game = createGame(levelById(this.state.levelId));
+    this.state.startedAt = now();
     this.state.selected = null;
     this.drawTiles();
     this.setHudVisible(true);
@@ -370,6 +387,8 @@ Page({
     this.clearMenu();
     this.state.screen = "playing";
     restart(this.state.game);
+    // A board put back the way it started is a new game, and it is timed as one.
+    this.state.startedAt = now();
     this.state.selected = null;
     this.drawTiles();
     this.setHudVisible(true);
@@ -417,7 +436,8 @@ Page({
     this.setHudVisible(false);
 
     const moves = this.state.game.moves;
-    const result = updateBest(this.state.best, { moves, time: this.state.best.time });
+    const time = elapsedBetween(this.state.startedAt, now());
+    const result = updateBest(this.state.best, { moves, time });
     this.state.best = result.best;
     if (result.isRecord) {
       this.writeBest(result.best);
@@ -431,6 +451,12 @@ Page({
         height: TEXT.row,
         color: COLOR_TEXT,
         text: `${this.text("moves")} ${moves}`,
+      },
+      {
+        kind: "text",
+        height: TEXT.small,
+        color: COLOR_MUTED,
+        text: `${this.text("time")} ${formatElapsed(time, this.text("none"))}`,
       },
       {
         kind: "text",
