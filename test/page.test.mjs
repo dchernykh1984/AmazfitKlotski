@@ -273,6 +273,20 @@ describe("choosing a board", () => {
     expect(ui.buttonWithText(en.records)).toBeTruthy();
   });
 
+  it("gives a board reached with the picker its own record", async () => {
+    // Board 1 holds a record no game on board 2 could ever beat. Walking the
+    // picker has to reload the record along with the board: measured against
+    // board 1's, board 2's first game would not be written down at all.
+    await boot({ stored: { [bestKey(FIRST.id)]: 5 } });
+    press(levelName(FIRST));
+    press(en.play);
+    const moves = playOut(LEVELS[1].id);
+
+    expect(ui.hasText(en.new_best)).toBe(true);
+    expect(storage.stored()[bestKey(LEVELS[1].id)]).toBe(moves);
+    expect(storage.stored()[bestKey(FIRST.id)]).toBe(5);
+  });
+
   it("lets a swipe to the right out of the menu", async () => {
     await boot();
     expect(interaction.swipe(GESTURE_RIGHT)).toBe(false);
