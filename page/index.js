@@ -249,7 +249,10 @@ Page({
   // ---------------------------------------------------------------- input ----
 
   // Swipes slide the selected block while a game is on, pick the board in the
-  // start menu, and page through the records. Returning true swallows the
+  // start menu, and page through the records. A swipe drags the boards past the
+  // window rather than moving a cursor over them, which is what a finger expects
+  // of any list: pulling down brings the earlier board into view, pushing up
+  // brings the later one. Returning true swallows the
   // gesture: during a game that also blocks the system back-swipe, so sliding a
   // block to the right cannot quit the app by accident. The menus deliberately
   // let the right swipe through, which is how you leave - except the records,
@@ -271,9 +274,9 @@ Page({
       if (gesture === GESTURE_RIGHT) {
         this.showStart();
       } else if (gesture === GESTURE_DOWN) {
-        this.showRecords(nextLevel(this.state.recordsId).id);
-      } else if (gesture === GESTURE_UP) {
         this.showRecords(previousLevel(this.state.recordsId).id);
+      } else if (gesture === GESTURE_UP) {
+        this.showRecords(nextLevel(this.state.recordsId).id);
       }
       return true;
     }
@@ -283,9 +286,9 @@ Page({
     }
     if (this.state.screen === "start") {
       if (gesture === GESTURE_DOWN) {
-        this.chooseLevel(nextLevel(this.state.levelId).id);
-      } else if (gesture === GESTURE_UP) {
         this.chooseLevel(previousLevel(this.state.levelId).id);
+      } else if (gesture === GESTURE_UP) {
+        this.chooseLevel(nextLevel(this.state.levelId).id);
       }
     }
     return true;
