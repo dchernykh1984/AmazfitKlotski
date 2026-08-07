@@ -251,14 +251,16 @@ describe("choosing a board", () => {
     expect(storage.stored()[LEVEL_KEY]).toBe(LEVELS[1].id);
   });
 
-  it("walks it with swipes too, in both directions", async () => {
+  it("walks it with swipes too, the way a list scrolls", async () => {
+    // A swipe drags the ladder past the window: pushing up brings the later
+    // board into view, pulling down brings the earlier one back.
     await boot();
-    interaction.swipe(GESTURE_DOWN);
+    interaction.swipe(GESTURE_UP);
     expect(ui.buttonWithText(levelName(LEVELS[1]))).toBeTruthy();
-    interaction.swipe(GESTURE_UP);
+    interaction.swipe(GESTURE_DOWN);
     expect(ui.buttonWithText(levelName(FIRST))).toBeTruthy();
-    // Wrapping backwards from the first board lands on the last.
-    interaction.swipe(GESTURE_UP);
+    // Pulling down off the front of the ladder wraps to the last board.
+    interaction.swipe(GESTURE_DOWN);
     expect(ui.buttonWithText(levelName(LEVELS[LEVELS.length - 1]))).toBeTruthy();
   });
 
@@ -951,20 +953,36 @@ describe("the records", () => {
     }
   });
 
-  it("pages through every board and wraps round, in both directions", async () => {
+  it("pages through every board and wraps round, the way a list scrolls", async () => {
+    // Pushing up walks towards the harder boards, pulling down walks back - the
+    // same direction the finger would drag a list of them.
     await openRecords();
     expect(shown().level).toBe(levelName(FIRST));
 
     for (let step = 1; step < LEVELS.length; step++) {
-      interaction.swipe(GESTURE_DOWN);
-      expect(shown().level, `down ${step}`).toBe(levelName(LEVELS[step]));
+      interaction.swipe(GESTURE_UP);
+      expect(shown().level, `up ${step}`).toBe(levelName(LEVELS[step]));
     }
     // Round the end and back to the first board.
-    interaction.swipe(GESTURE_DOWN);
+    interaction.swipe(GESTURE_UP);
     expect(shown().level).toBe(levelName(FIRST));
     // And the other way, off the front and onto the last.
-    interaction.swipe(GESTURE_UP);
+    interaction.swipe(GESTURE_DOWN);
     expect(shown().level).toBe(levelName(LEVELS[LEVELS.length - 1]));
+  });
+
+  it("pages the same way on the records as the picker does on the start screen", async () => {
+    // One gesture, one meaning: a player who learns it in the menu should not
+    // have to unlearn it two screens later.
+    await boot();
+    interaction.swipe(GESTURE_UP);
+    const pickedBySwipe = ui.buttonWithText(levelName(LEVELS[1]));
+    expect(pickedBySwipe).toBeTruthy();
+
+    press(en.records);
+    expect(shown().level).toBe(levelName(LEVELS[1]));
+    interaction.swipe(GESTURE_UP);
+    expect(shown().level).toBe(levelName(LEVELS[2]));
   });
 
   it("carries each board's own record as it pages", async () => {
@@ -980,7 +998,7 @@ describe("the records", () => {
     expect(shown().moves).toBe(`${en.moves} 9`);
     expect(shown().time).toBe(`${en.time} 1:01`);
 
-    interaction.swipe(GESTURE_DOWN);
+    interaction.swipe(GESTURE_UP);
     expect(shown().moves).toBe(`${en.moves} 40`);
     expect(shown().time).toBe(`${en.time} 1:02:03`);
     expect(shown().minimum).toBe(`${en.minimum} ${LEVELS[1].par}`);
