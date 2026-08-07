@@ -141,20 +141,20 @@ describe("every screen the bundle ships for", () => {
     }
   });
 
-  it("fits a whole menu inside the panel it is drawn on", () => {
+  it("fits every menu the game draws inside the panel it is drawn on", () => {
     for (const size of SHIPPED_SIZES) {
       const layout = screenLayout(size);
-      // The tallest menu the game draws: the solved screen.
-      const stack =
-        layout.text.title +
-        layout.text.gap +
-        layout.text.row +
-        layout.text.small +
-        layout.text.gap +
-        layout.text.button +
-        layout.text.gap +
-        layout.text.button;
-      expect(stack, `${size}/menu height`).toBeLessThanOrEqual(layout.board.h);
+      const t = layout.text;
+      // Each of these is a row-for-row model of a stack in page/index.js.
+      const stacks = {
+        start: t.title + t.gap + t.button + t.gap + t.button + t.button + t.hint,
+        solved: t.title + t.gap + t.row + t.small + t.small + t.gap + t.button + t.gap + t.button,
+        records: t.row + t.gap + t.small + t.small + t.small + t.gap + t.button,
+        paused: t.button + t.gap + t.button,
+      };
+      for (const [name, height] of Object.entries(stacks)) {
+        expect(height, `${size}/${name} height`).toBeLessThanOrEqual(layout.board.h);
+      }
       expect(layout.menuWidth, `${size}/menu width`).toBeLessThan(layout.board.w);
       expect(layout.menuWidth, `${size}/menu width`).toBeGreaterThan(layout.board.w * 0.8);
     }

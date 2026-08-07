@@ -179,6 +179,9 @@ Page({
     // the moment the hero is out - finish minus start, with nothing in between
     // stopping it.
     startedAt: 0,
+    // The board whose record is on screen, which is its own thing: reading the
+    // records is not choosing what to play next.
+    recordsId: FIRST_LEVEL,
     destroyed: false,
     // Widgets, grouped by lifetime: the tray lives as long as the page, the block
     // tiles as long as a game, and the head-up display and the menus only as long
@@ -236,11 +239,12 @@ Page({
 
   // ---------------------------------------------------------------- input ----
 
-  // Swipes slide the selected block while a game is on, and pick the board in the
-  // start menu. Returning true swallows the gesture: during a game that also
-  // blocks the system back-swipe, so sliding a block to the right cannot quit the
-  // app by accident. Every menu deliberately lets the right swipe through, which
-  // is how you leave.
+  // Swipes slide the selected block while a game is on, pick the board in the
+  // start menu, and page through the records. Returning true swallows the
+  // gesture: during a game that also blocks the system back-swipe, so sliding a
+  // block to the right cannot quit the app by accident. The menus deliberately
+  // let the right swipe through, which is how you leave - except the records,
+  // which are a screen deeper, so there the right swipe only comes back out.
   onGesture(gesture) {
     if (this.state.destroyed) {
       return false;
@@ -250,6 +254,17 @@ Page({
       const direction = directionForGesture(gesture);
       if (direction !== null) {
         this.slide(direction);
+      }
+      return true;
+    }
+
+    if (this.state.screen === "records") {
+      if (gesture === GESTURE_RIGHT) {
+        this.showStart();
+      } else if (gesture === GESTURE_DOWN) {
+        this.showRecords(nextLevel(this.state.recordsId).id);
+      } else if (gesture === GESTURE_UP) {
+        this.showRecords(previousLevel(this.state.recordsId).id);
       }
       return true;
     }
@@ -356,6 +371,12 @@ Page({
         height: TEXT.button,
         text: this.text("play"),
         onClick: () => this.startGame(),
+      },
+      {
+        kind: "button",
+        height: TEXT.button,
+        text: this.text("records"),
+        onClick: () => this.showRecords(this.state.levelId),
       },
       { kind: "text", height: TEXT.hint, color: COLOR_MUTED, text: this.text("hint") },
     ]);
@@ -477,6 +498,51 @@ Page({
         height: TEXT.button,
         text: this.text("again"),
         onClick: () => this.restartGame(),
+      },
+    ]);
+  },
+
+  // One board's record per screen, paged with a swipe up or down and wrapping
+  // round, so the whole ladder is reachable without a list that would not fit.
+  // Reading the records leaves the chosen board alone.
+  showRecords(levelId) {
+    const level = levelById(levelId === undefined ? this.state.recordsId : levelId);
+    this.state.screen = "records";
+    this.state.recordsId = level.id;
+    this.state.game = null;
+    this.state.selected = null;
+    this.clearTiles();
+    this.setHudVisible(false);
+
+    const record = this.recordFor(level.id);
+    const solved = hasRecord(record);
+    this.drawMenu([
+      { kind: "text", height: TEXT.row, color: COLOR_ACCENT, text: this.levelName(level) },
+      { kind: "gap", height: TEXT.gap },
+      {
+        kind: "text",
+        height: TEXT.small,
+        color: COLOR_TEXT,
+        text: `${this.text("moves")} ${solved ? record.moves : this.text("none")}`,
+      },
+      {
+        kind: "text",
+        height: TEXT.small,
+        color: COLOR_TEXT,
+        text: `${this.text("time")} ${formatElapsed(record.time, this.text("none"))}`,
+      },
+      {
+        kind: "text",
+        height: TEXT.small,
+        color: COLOR_MUTED,
+        text: `${this.text("par")} ${level.par}`,
+      },
+      { kind: "gap", height: TEXT.gap },
+      {
+        kind: "button",
+        height: TEXT.button,
+        text: this.text("back"),
+        onClick: () => this.showStart(),
       },
     ]);
   },
