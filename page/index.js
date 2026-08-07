@@ -372,6 +372,7 @@ Page({
         text: this.text("play"),
         onClick: () => this.startGame(),
       },
+      { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
         height: TEXT.button,
