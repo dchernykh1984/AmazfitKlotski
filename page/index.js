@@ -359,12 +359,6 @@ Page({
         text: this.levelName(level),
         onClick: () => this.chooseLevel(nextLevel(this.state.levelId).id),
       },
-      {
-        kind: "text",
-        height: TEXT.small,
-        color: COLOR_MUTED,
-        text: `${this.text("par")} ${level.par}   ${this.text("best")} ${this.bestText()}`,
-      },
       { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
@@ -464,6 +458,13 @@ Page({
       this.writeBest(result.best);
     }
 
+    // The record line is only there when there is a record to announce; the
+    // standing one lives on the records screen now, not in the way of the next
+    // game.
+    const crown = result.isRecord
+      ? [{ kind: "text", height: TEXT.small, color: COLOR_ACCENT, text: this.text("new_best") }]
+      : [];
+
     this.drawMenu([
       { kind: "text", height: TEXT.title, color: COLOR_ACCENT, text: this.text("solved") },
       { kind: "gap", height: TEXT.gap },
@@ -479,12 +480,7 @@ Page({
         color: COLOR_MUTED,
         text: `${this.text("time")} ${formatElapsed(time, this.text("none"))}`,
       },
-      {
-        kind: "text",
-        height: TEXT.small,
-        color: result.isRecord ? COLOR_ACCENT : COLOR_MUTED,
-        text: result.isRecord ? this.text("new_best") : `${this.text("best")} ${this.bestText()}`,
-      },
+      ...crown,
       { kind: "gap", height: TEXT.gap },
       {
         kind: "button",
@@ -712,7 +708,7 @@ Page({
     if (!game || this.state.screen !== "playing") {
       return;
     }
-    const text = `${game.moves} / ${game.level.par}`;
+    const text = String(game.moves);
     this.state.counter = this.createText(LAYOUT.counter, TEXT.row, COLOR_TEXT, text);
   },
 
@@ -835,10 +831,6 @@ Page({
   writeBest(record) {
     writeValue(this.state.storage, bestKey(this.state.levelId), record.moves);
     writeValue(this.state.storage, bestTimeKey(this.state.levelId), record.time);
-  },
-
-  bestText() {
-    return hasRecord(this.state.best) ? String(this.state.best.moves) : this.text("none");
   },
 
   // A board is called by its number: one word to translate, and a board added
