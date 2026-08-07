@@ -531,7 +531,7 @@ Page({
         kind: "text",
         height: TEXT.small,
         color: COLOR_MUTED,
-        text: `${this.text("par")} ${level.par}`,
+        text: `${this.text("minimum")} ${level.par}`,
       },
       { kind: "gap", height: TEXT.gap },
       {
