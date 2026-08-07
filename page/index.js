@@ -28,7 +28,15 @@ import { CONTROL_ART, assignArt } from "../lib/pieces.js";
 import { cellAt, screenLayout, selectionBox, tileBox } from "../lib/layout.js";
 import { centeredBox } from "../lib/round-geometry.js";
 import { labelFor, languageFromZeppCode, levelLabel } from "../lib/i18n/index.js";
-import { LEVEL_KEY, bestKey, hasRecord, normalizeMoves, updateBest } from "../lib/scores.js";
+import {
+  LEVEL_KEY,
+  bestKey,
+  bestTimeKey,
+  hasRecord,
+  normalizeMoves,
+  updateBest,
+} from "../lib/scores.js";
+import { normalizeElapsed } from "../lib/clock.js";
 import { SCREEN_SIZE } from "../utils/config/device.js";
 import {
   BRIGHT_TIME_MS,
@@ -149,7 +157,7 @@ Page({
   state: {
     language: "en",
     levelId: FIRST_LEVEL,
-    best: 0,
+    best: { moves: 0, time: 0 },
     screen: "start",
     game: null,
     art: [],
@@ -409,10 +417,10 @@ Page({
     this.setHudVisible(false);
 
     const moves = this.state.game.moves;
-    const result = updateBest(this.state.best, moves);
+    const result = updateBest(this.state.best, { moves, time: this.state.best.time });
     this.state.best = result.best;
     if (result.isRecord) {
-      writeValue(this.state.storage, bestKey(this.state.levelId), result.best);
+      this.writeBest(result.best);
     }
 
     this.drawMenu([
@@ -719,12 +727,26 @@ Page({
 
   // ---------------------------------------------------------------- helpers ----
 
+  // A board's record is two entries in storage - the moves and the clock - read
+  // back as the one pair the rest of the code compares.
   readBest() {
-    this.state.best = normalizeMoves(readValue(this.state.storage, bestKey(this.state.levelId)));
+    this.state.best = this.recordFor(this.state.levelId);
+  },
+
+  recordFor(levelId) {
+    return {
+      moves: normalizeMoves(readValue(this.state.storage, bestKey(levelId))),
+      time: normalizeElapsed(readValue(this.state.storage, bestTimeKey(levelId))),
+    };
+  },
+
+  writeBest(record) {
+    writeValue(this.state.storage, bestKey(this.state.levelId), record.moves);
+    writeValue(this.state.storage, bestTimeKey(this.state.levelId), record.time);
   },
 
   bestText() {
-    return hasRecord(this.state.best) ? String(this.state.best) : this.text("none");
+    return hasRecord(this.state.best) ? String(this.state.best.moves) : this.text("none");
   },
 
   // A board is called by its number: one word to translate, and a board added
