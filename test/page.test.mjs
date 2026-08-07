@@ -149,8 +149,10 @@ function tapTile(block) {
   tap(tileAt(block));
 }
 
+// The counter is the one place a bare number is drawn: how many moves have been
+// spent, with nothing to measure it against.
 function counterText() {
-  return ui.texts().find((text) => / \/ /.test(text)) || null;
+  return ui.texts().find((text) => /^\d+$/.test(text)) || null;
 }
 
 function firstOfKind(level, kind) {
@@ -232,7 +234,7 @@ describe("opening the app", () => {
   it("still opens when storage refuses to be read", async () => {
     await boot({ storageFails: "read" });
     expect(ui.buttonWithText(en.play)).toBeTruthy();
-    expect(ui.hasText(`${en.par} ${FIRST.par}   ${en.best} ${en.none}`)).toBe(true);
+    expect(ui.buttonWithText(levelName(FIRST))).toBeTruthy();
   });
 
   it("speaks the language the watch is set to", async () => {
@@ -260,14 +262,15 @@ describe("choosing a board", () => {
     expect(ui.buttonWithText(levelName(LEVELS[LEVELS.length - 1]))).toBeTruthy();
   });
 
-  it("shows the par of the board, and no record until one is set", async () => {
-    await boot();
-    expect(ui.hasText(`${en.par} ${FIRST.par}   ${en.best} ${en.none}`)).toBe(true);
-  });
-
-  it("shows the record kept for that board", async () => {
+  it("says nothing about par or records - those live on their own screen", async () => {
+    // The picker used to carry "Par 116  Best 132", which read like a move
+    // allowance. A board is a number and a button now.
     await boot({ stored: { [bestKey(FIRST.id)]: 42 } });
-    expect(ui.hasText(`${en.par} ${FIRST.par}   ${en.best} 42`)).toBe(true);
+    for (const text of ui.texts()) {
+      expect(text, text).not.toContain(String(FIRST.par));
+      expect(text, text).not.toContain("42");
+    }
+    expect(ui.buttonWithText(en.records)).toBeTruthy();
   });
 
   it("lets a swipe to the right out of the menu", async () => {
@@ -284,7 +287,7 @@ describe("playing", () => {
     expect(tiles().length).toBe(FIRST.blocks.length);
     // Every block wears its own portrait: a board of blank tiles is not a board.
     expect(tiles().map((tile) => tile.props.src)).toEqual(assignArt(createGame(FIRST).blocks));
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
     expect(ui.buttonWithText(en.restart)).toBeTruthy();
     expect(ui.buttonWithText(en.play)).toBeNull();
     expect(ui.hasText(en.title)).toBe(false);
@@ -294,7 +297,7 @@ describe("playing", () => {
     await boot();
     press(en.play);
     interaction.swipe(GESTURE_DOWN);
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
   });
 
   it("slides the tapped block and counts the move", async () => {
@@ -306,7 +309,7 @@ describe("playing", () => {
     tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
 
-    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(counterText()).toBe("1");
     expect(tileAt({ ...soldier, y: soldier.y + 1 }).props.y).toBeGreaterThan(before);
   });
 
@@ -341,7 +344,7 @@ describe("playing", () => {
     const moved = { ...soldier, y: soldier.y + 1 };
     tapTile(moved);
     interaction.swipe(GESTURE_DOWN);
-    expect(counterText()).toBe(`2 / ${FIRST.par}`);
+    expect(counterText()).toBe("2");
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(1);
   });
 
@@ -372,7 +375,7 @@ describe("playing", () => {
     interaction.swipe(GESTURE_UP);
     interaction.swipe(GESTURE_LEFT);
     interaction.swipe(GESTURE_RIGHT);
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
   });
 
   it("swallows swipes so a slide cannot back out of the app", async () => {
@@ -389,15 +392,15 @@ describe("playing", () => {
     const before = tileAt(soldier).props.y;
     tapTile(soldier);
     interaction.swipe(GESTURE_DOWN);
-    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(counterText()).toBe("1");
 
     pressIcon("undo.png");
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
     expect(tileAt(soldier).props.y).toBe(before);
 
     // Undoing with nothing to take back is harmless.
     pressIcon("undo.png");
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
   });
 
   it("puts the board back with restart", async () => {
@@ -410,7 +413,7 @@ describe("playing", () => {
     interaction.swipe(GESTURE_DOWN);
 
     press(en.restart);
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
     expect(tileAt(soldier).props.y).toBe(before);
     expect(tiles().length).toBe(FIRST.blocks.length);
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
@@ -429,7 +432,7 @@ describe("the in-game menu", () => {
 
     press(en.resume);
     expect(ui.buttonWithText(en.resume)).toBeNull();
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
   });
 
   it("goes back to the board list, leaving no tiles behind", async () => {
@@ -549,7 +552,6 @@ describe("solving a board", () => {
     playOut(FIRST.id);
 
     expect(ui.hasText(en.new_best)).toBe(false);
-    expect(ui.hasText(`${en.best} 3`)).toBe(true);
     expect(storage.stored()[bestKey(FIRST.id)]).toBe(3);
   });
 
@@ -566,8 +568,11 @@ describe("solving a board", () => {
     press(en.again);
     tick(120_000);
     playOut(FIRST.id);
-    expect(ui.hasText(`${en.best} ${moves}`)).toBe(true);
+    // Not being told this is a record is the proof the first one is still
+    // remembered: nothing was written down, so it can only have come from the
+    // session's own copy.
     expect(ui.hasText(en.new_best)).toBe(false);
+    expect(moves).toBe(FIRST.par);
   });
 
   it("takes the record when the same game is played faster", async () => {
@@ -609,7 +614,7 @@ describe("solving a board", () => {
 
     press(en.next);
     const second = nextLevel(FIRST.id);
-    expect(counterText()).toBe(`0 / ${second.par}`);
+    expect(counterText()).toBe("0");
     expect(tiles().length).toBe(second.blocks.length);
     expect(storage.stored()[LEVEL_KEY]).toBe(second.id);
   });
@@ -620,7 +625,7 @@ describe("solving a board", () => {
     playOut(FIRST.id);
 
     press(en.again);
-    expect(counterText()).toBe(`0 / ${FIRST.par}`);
+    expect(counterText()).toBe("0");
     expect(ui.hasText(en.solved)).toBe(false);
     expect(tiles().length).toBe(FIRST.blocks.length);
   });
@@ -738,7 +743,7 @@ describe("picking up a block", () => {
     tap(boardWidget(), { x: box.x + 4, y: box.y + 4 });
 
     interaction.swipe(GESTURE_DOWN);
-    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(counterText()).toBe("1");
   });
 
   it("does not let the start of a swipe steal the block that was picked up", async () => {
@@ -761,7 +766,7 @@ describe("picking up a block", () => {
     interaction.swipe(GESTURE_DOWN);
 
     // The soldier moved, not the hero the finger happened to land on.
-    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(counterText()).toBe("1");
     expect(tileAt({ ...soldier, y: soldier.y + 1 })).toBeTruthy();
     expect(tileAt(hero)).toBeTruthy();
   });
@@ -779,7 +784,7 @@ describe("picking up a block", () => {
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(1);
 
     interaction.swipe(GESTURE_DOWN);
-    expect(counterText()).toBe(`1 / ${FIRST.par}`);
+    expect(counterText()).toBe("1");
   });
 });
 
