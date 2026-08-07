@@ -799,7 +799,7 @@ describe("the records", () => {
       level: ui.texts().find((text) => text.startsWith(en.level)) || null,
       moves: ui.texts().find((text) => text.startsWith(en.moves)) || null,
       time: ui.texts().find((text) => text.startsWith(en.time)) || null,
-      par: ui.texts().find((text) => text.startsWith(en.par)) || null,
+      minimum: ui.texts().find((text) => text.startsWith(en.minimum)) || null,
     };
   }
 
@@ -819,7 +819,7 @@ describe("the records", () => {
 
     expect(shown().moves).toBe(`${en.moves} 12`);
     expect(shown().time).toBe(`${en.time} 4:21`);
-    expect(shown().par).toBe(`${en.par} ${FIRST.par}`);
+    expect(shown().minimum).toBe(`${en.minimum} ${FIRST.par}`);
   });
 
   it("leaves gaps for a board that has never been solved", async () => {
@@ -828,7 +828,7 @@ describe("the records", () => {
     expect(shown().time).toBe(`${en.time} ${en.none}`);
     // The shortest game possible is a property of the board, so it is there from
     // the start - it is the one number that does not wait for a player.
-    expect(shown().par).toBe(`${en.par} ${FIRST.par}`);
+    expect(shown().minimum).toBe(`${en.minimum} ${FIRST.par}`);
   });
 
   it("shows the moves of a record that was set before the game had a clock", async () => {
@@ -869,7 +869,7 @@ describe("the records", () => {
     interaction.swipe(GESTURE_DOWN);
     expect(shown().moves).toBe(`${en.moves} 40`);
     expect(shown().time).toBe(`${en.time} 1:02:03`);
-    expect(shown().par).toBe(`${en.par} ${LEVELS[1].par}`);
+    expect(shown().minimum).toBe(`${en.minimum} ${LEVELS[1].par}`);
   });
 
   it("does not change which board is about to be played", async () => {
