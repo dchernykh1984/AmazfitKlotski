@@ -253,9 +253,9 @@ Page({
   // start menu, and page through the records. A swipe drags the boards past the
   // window rather than moving a cursor over them, which is what a finger expects
   // of any list: pulling down brings the earlier board into view, pushing up
-  // brings the later one. Returning true swallows the
-  // gesture: during a game that also blocks the system back-swipe, so sliding a
-  // block to the right cannot quit the app by accident. The menus deliberately
+  // brings the later one. Returning true swallows the gesture: during a game that
+  // also blocks the system back-swipe, so sliding a block to the right cannot
+  // quit the app by accident. The menus deliberately
   // let the right swipe through, which is how you leave - except the records,
   // which are a screen deeper, so there the right swipe only comes back out.
   onGesture(gesture) {
@@ -532,7 +532,10 @@ Page({
     const solved = hasRecord(record);
     const box = LAYOUT.records;
     const figures = [
-      { color: COLOR_TEXT, text: `${this.text("moves")} ${solved ? record.moves : this.text("none")}` },
+      {
+        color: COLOR_TEXT,
+        text: `${this.text("moves")} ${solved ? record.moves : this.text("none")}`,
+      },
       {
         color: COLOR_TEXT,
         text: `${this.text("time")} ${formatElapsed(record.time, this.text("none"))}`,

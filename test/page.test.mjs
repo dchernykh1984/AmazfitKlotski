@@ -974,8 +974,22 @@ describe("the records", () => {
     expect(
       ui
         .liveOfType(ui.widget.FILL_RECT)
-        .filter((created) => created.props.w === screenSize && created.props.h === screenSize).length
+        .filter((created) => created.props.w === screenSize && created.props.h === screenSize)
+        .length
     ).toBe(1);
+  });
+
+  it("puts a figure on every line the layout leaves room for", async () => {
+    // The page draws its three figures into boxes the layout counted out. If the
+    // two ever disagree about how many there are, a board's record silently loses
+    // a line - or the page reaches for a box that is not there.
+    await openRecords();
+    const drawn = ui.liveOfType(ui.widget.TEXT).map((created) => created.props.y);
+    const { records } = screenLayout(screenSize);
+    for (const box of records.rows) {
+      expect(drawn).toContain(box.y);
+    }
+    expect(drawn.length).toBe(records.rows.length + 3);
   });
 
   it("reads larger than the same lines did inside a panel", async () => {
