@@ -63,20 +63,23 @@ const TEXT = LAYOUT.text;
 const memory = {};
 
 function readValue(storage, key) {
+  // The session's own copy answers first. It only ever holds what this page has
+  // written, and it is written before storage is even tried, so where it has
+  // something it is never the older of the two. On a watch whose storage reads
+  // but refuses to write - a full one - what is on the disk is the last
+  // generation: not just missing, but beaten.
+  if (memory[key] !== undefined) {
+    return memory[key];
+  }
   if (storage) {
     try {
-      const stored = storage.getItem(key);
-      if (stored !== undefined && stored !== null) {
-        return stored;
-      }
-      // Nothing written down under that key. On a watch whose storage reads but
-      // refuses to write - a full one - that is exactly where a record set this
-      // session lives, so fall through rather than reporting it lost.
+      return storage.getItem(key);
     } catch {
-      // Fall through to the in-memory copy.
+      // Nothing readable and nothing remembered; the callers read that as no
+      // record at all.
     }
   }
-  return memory[key];
+  return undefined;
 }
 
 function writeValue(storage, key, value) {

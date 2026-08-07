@@ -643,6 +643,36 @@ describe("solving a board", () => {
     expect(ui.hasText(en.new_best)).toBe(false);
   });
 
+  it("beats a record it could not write over, rather than reading the beaten one back", async () => {
+    // The watch already holds a poor record and its storage refuses writes, so
+    // the beaten entry stays on the disk. Everything that re-reads a record has
+    // to prefer the one set this session - otherwise the records screen shows
+    // the game the player has just beaten, and the next slower game is crowned
+    // a record all over again.
+    setClock(1_700_000_000_000);
+    await boot({
+      storageFails: "write",
+      stored: { [bestKey(FIRST.id)]: 200, [bestTimeKey(FIRST.id)]: 600_000 },
+    });
+    press(en.play);
+    tick(60_000);
+    const moves = playOut(FIRST.id);
+    expect(ui.hasText(en.new_best)).toBe(true);
+
+    press(en.again);
+    pressIcon("menu.png");
+    press(en.levels);
+    press(en.records);
+    expect(ui.texts()).toContain(`${en.moves} ${moves}`);
+    expect(ui.texts()).toContain(`${en.time} 1:00`);
+
+    press(en.back);
+    press(en.play);
+    tick(300_000);
+    playOut(FIRST.id);
+    expect(ui.hasText(en.new_best)).toBe(false);
+  });
+
   it("takes the record when the same game is played faster", async () => {
     setClock(1_700_000_000_000);
     await boot();
