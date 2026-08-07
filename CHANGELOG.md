@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.2...amazfit-klotski-v0.3.0) (2026-08-07)
+
+
+### Features
+
+* measure and write how long a game took ([042a306](https://github.com/dchernykh1984/AmazfitKlotski/commit/042a30670f50075fe409b19ea6fd35e2f63a1db6))
+* number the boards instead of naming them ([22982ef](https://github.com/dchernykh1984/AmazfitKlotski/commit/22982ef90f74e56decf26aac0e6ac4b920fcb15b))
+* page through the records, one board per screen ([aed548d](https://github.com/dchernykh1984/AmazfitKlotski/commit/aed548d4d658558adfceba900c2a1363bdf14500))
+* score a record on moves first and the clock second ([26338f4](https://github.com/dchernykh1984/AmazfitKlotski/commit/26338f499637303fff9ef5806eacaaf96341229a))
+* time a game from the moment the board opens ([96ac48d](https://github.com/dchernykh1984/AmazfitKlotski/commit/96ac48d6e255b34d624d102cbfb1c8b32461e514))
+
+
+### Bug Fixes
+
+* keep a record the watch could not write down for the session ([184dd1c](https://github.com/dchernykh1984/AmazfitKlotski/commit/184dd1cec144d3d9844893434be1695f574703fc))
+* prefer this session's record over a beaten one still on the disk ([1063989](https://github.com/dchernykh1984/AmazfitKlotski/commit/1063989d04b4c0860fdb5cc5b1d64f4d45aef59f))
+* put daylight between the Play and Records buttons ([cf988df](https://github.com/dchernykh1984/AmazfitKlotski/commit/cf988dfca1b7c6e7eb9b0579d589d15d263c94e9))
+* read a board's record as one pair, not two loose halves ([ef116a2](https://github.com/dchernykh1984/AmazfitKlotski/commit/ef116a2d6d0f64be16ee7c9b63220ae5aad9f357))
+
 ## [0.2.2](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.1...amazfit-klotski-v0.2.2) (2026-08-06)
 
 
