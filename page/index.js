@@ -33,10 +33,10 @@ import {
   bestKey,
   bestTimeKey,
   hasRecord,
-  normalizeMoves,
+  normalizeResult,
   updateBest,
 } from "../lib/scores.js";
-import { elapsedBetween, formatElapsed, normalizeElapsed } from "../lib/clock.js";
+import { elapsedBetween, formatElapsed } from "../lib/clock.js";
 import { SCREEN_SIZE } from "../utils/config/device.js";
 import {
   BRIGHT_TIME_MS,
@@ -827,11 +827,14 @@ Page({
     this.state.best = this.recordFor(this.state.levelId);
   },
 
+  // The two halves are stored apart but they are one result, so they are put back
+  // together through the normalizer that owns that rule: a clock without a game
+  // to go with it is not a time anyone should be shown.
   recordFor(levelId) {
-    return {
-      moves: normalizeMoves(readValue(this.state.storage, bestKey(levelId))),
-      time: normalizeElapsed(readValue(this.state.storage, bestTimeKey(levelId))),
-    };
+    return normalizeResult({
+      moves: readValue(this.state.storage, bestKey(levelId)),
+      time: readValue(this.state.storage, bestTimeKey(levelId)),
+    });
   },
 
   writeBest(record) {
