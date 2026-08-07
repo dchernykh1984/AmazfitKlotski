@@ -68,6 +68,17 @@ describe("the bundled levels", () => {
     expect(LEVELS.map((level) => level.id)).toEqual(LEVELS.map((_, index) => index + 1));
   });
 
+  it("keeps the boards that already own a number exactly where they are", () => {
+    // A board's number is the key its record is stored under, so the numbers may
+    // only ever be handed out at the end of the list. Appending a seventh board
+    // is fine and this test stays green; inserting one between these six, or
+    // swapping two of them, hands one board's record to another - and that is
+    // what this catches. The shortest possible game is the board's fingerprint:
+    // the solver recomputes each one from the art in the "par" tests below, so a
+    // board cannot match this list without being the board it claims to be.
+    expect(LEVELS.slice(0, 6).map((level) => level.par)).toEqual([7, 17, 26, 51, 92, 116]);
+  });
+
   it("have unique ids", () => {
     const ids = LEVELS.map((level) => level.id);
     expect(new Set(ids).size).toBe(ids.length);
