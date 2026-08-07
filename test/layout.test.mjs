@@ -147,7 +147,7 @@ describe("every screen the bundle ships for", () => {
       const t = layout.text;
       // Each of these is a row-for-row model of a stack in page/index.js.
       const stacks = {
-        start: t.title + t.gap + t.button + t.gap + t.button + t.button + t.hint,
+        start: t.title + t.gap + t.button + t.gap + t.button + t.gap + t.button + t.hint,
         solved: t.title + t.gap + t.row + t.small + t.small + t.gap + t.button + t.gap + t.button,
         records: t.row + t.gap + t.small + t.small + t.small + t.gap + t.button,
         paused: t.button + t.gap + t.button,

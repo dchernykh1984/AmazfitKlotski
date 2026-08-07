@@ -287,6 +287,35 @@ describe("choosing a board", () => {
     expect(storage.stored()[bestKey(FIRST.id)]).toBe(5);
   });
 
+  it("leaves daylight between the buttons of every menu", async () => {
+    // Two pill buttons sharing an edge read as one control and there is no dead
+    // zone between them: a finger aimed at the seam lands on whichever the
+    // firmware resolves first. Checked on the narrowest watch, where the buttons
+    // are smallest and the mistake costs most.
+    const menus = [
+      ["start", () => {}],
+      ["paused", () => (press(en.play), pressIcon("menu.png"))],
+      ["solved", () => (press(en.play), playOut(FIRST.id))],
+    ];
+    for (const [name, open] of menus) {
+      await boot({ screenSize: 360 });
+      open();
+      const rows = ui
+        .buttons()
+        .filter((button) => button.props.text)
+        .filter((button) => button.props.w === screenLayout(360).menuWidth)
+        .sort((a, b) => a.props.y - b.props.y);
+      expect(rows.length, name).toBeGreaterThan(1);
+      for (let i = 1; i < rows.length; i++) {
+        const above = rows[i - 1];
+        const gap = rows[i].props.y - (above.props.y + above.props.h);
+        expect(gap, `${name}: "${above.props.text}" and "${rows[i].props.text}"`).toBeGreaterThan(
+          0
+        );
+      }
+    }
+  });
+
   it("lets a swipe to the right out of the menu", async () => {
     await boot();
     expect(interaction.swipe(GESTURE_RIGHT)).toBe(false);
