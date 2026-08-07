@@ -2,7 +2,8 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { DOWN, LEFT, RIGHT, UP, createGame, move } from "../lib/klotski.js";
 import { screenLayout, tileBox } from "../lib/layout.js";
 import { LEVELS, levelById, nextLevel } from "../lib/levels.js";
-import { LEVEL_KEY, bestKey } from "../lib/scores.js";
+import { LEVEL_KEY, bestKey, bestTimeKey } from "../lib/scores.js";
+import { formatElapsed } from "../lib/clock.js";
 import { assignArt } from "../lib/pieces.js";
 import { LABELS } from "../lib/i18n/labels.js";
 import { levelLabel } from "../lib/i18n/keys.js";
@@ -171,7 +172,23 @@ function playOut(levelId) {
   return line.length;
 }
 
+// The page reads Date.now() when a board opens and again when it is solved. The
+// test owns that clock, so a game can be made to take any length at all without
+// waiting for it.
+let clock = 0;
+const realDateNow = Date.now;
+
+function setClock(ms) {
+  clock = ms;
+  Date.now = () => clock;
+}
+
+function tick(ms) {
+  clock += ms;
+}
+
 afterEach(() => {
+  Date.now = realDateNow;
   delete globalThis.Page;
 });
 
@@ -445,6 +462,87 @@ describe("solving a board", () => {
     expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
   });
 
+  it("times the game from the moment the board opened", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    // Thinking on the start screen is not part of the game.
+    tick(90_000);
+    press(en.play);
+    tick(261_000);
+    const moves = playOut(FIRST.id);
+
+    expect(ui.hasText(`${en.time} 4:21`)).toBe(true);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(261_000);
+    expect(storage.stored()[bestKey(FIRST.id)]).toBe(moves);
+  });
+
+  it("counts the whole time the board was open, menus and all", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+
+    // Finish minus start: wandering off to the menu and back does not stop it.
+    tick(60_000);
+    pressIcon("menu.png");
+    tick(3_600_000);
+    press(en.resume);
+    tick(60_000);
+    playOut(FIRST.id);
+
+    expect(ui.hasText(`${en.time} 1:02:00`)).toBe(true);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(3_720_000);
+  });
+
+  it("starts the clock again when the board is restarted", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(600_000);
+    press(en.restart);
+    tick(61_000);
+    playOut(FIRST.id);
+
+    expect(ui.hasText(`${en.time} 1:01`)).toBe(true);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(61_000);
+  });
+
+  it("times the next board from its own start", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(30_000);
+    playOut(FIRST.id);
+    press(en.next);
+
+    const second = nextLevel(FIRST.id);
+    tick(15_000);
+    playOut(second.id);
+    expect(ui.hasText(`${en.time} 0:15`)).toBe(true);
+    expect(storage.stored()[bestTimeKey(second.id)]).toBe(15_000);
+  });
+
+  it("still plays and still records on a watch with no clock", async () => {
+    // Date.now() that never moves: every game takes no time at all, so nothing
+    // is timed - but the moves are still a record.
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    const moves = playOut(FIRST.id);
+
+    expect(ui.hasText(`${en.time} ${en.none}`)).toBe(true);
+    expect(storage.stored()[bestKey(FIRST.id)]).toBe(moves);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(0);
+  });
+
+  it("writes the time in the same words the clock module uses", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(3_723_000);
+    playOut(FIRST.id);
+    expect(ui.hasText(`${en.time} ${formatElapsed(3_723_000)}`)).toBe(true);
+  });
+
   it("keeps the shorter of two games", async () => {
     await boot({ stored: { [bestKey(FIRST.id)]: 3 } });
     press(en.play);
@@ -456,14 +554,52 @@ describe("solving a board", () => {
   });
 
   it("still remembers the record for the session when storage refuses to write", async () => {
+    setClock(1_700_000_000_000);
     await boot({ storageFails: "write" });
     press(en.play);
+    tick(60_000);
     const moves = playOut(FIRST.id);
     expect(ui.hasText(en.new_best)).toBe(true);
 
+    // The same number of moves but slower, so the standing record holds - and it
+    // is still there to hold, even though nothing could be written down.
     press(en.again);
+    tick(120_000);
     playOut(FIRST.id);
     expect(ui.hasText(`${en.best} ${moves}`)).toBe(true);
+    expect(ui.hasText(en.new_best)).toBe(false);
+  });
+
+  it("takes the record when the same game is played faster", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(120_000);
+    const moves = playOut(FIRST.id);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(120_000);
+
+    press(en.again);
+    tick(60_000);
+    playOut(FIRST.id);
+
+    expect(ui.hasText(en.new_best)).toBe(true);
+    expect(storage.stored()[bestKey(FIRST.id)]).toBe(moves);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(60_000);
+  });
+
+  it("leaves the record alone when the same game is played slower", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(60_000);
+    playOut(FIRST.id);
+
+    press(en.again);
+    tick(120_000);
+    playOut(FIRST.id);
+
+    expect(ui.hasText(en.new_best)).toBe(false);
+    expect(storage.stored()[bestTimeKey(FIRST.id)]).toBe(60_000);
   });
 
   it("moves on to the next board", async () => {
