@@ -783,6 +783,144 @@ describe("picking up a block", () => {
   });
 });
 
+describe("the records", () => {
+  async function openRecords(options = {}) {
+    await boot(options);
+    press(en.records);
+  }
+
+  function shown() {
+    return {
+      level: ui.texts().find((text) => text.startsWith(en.level)) || null,
+      moves: ui.texts().find((text) => text.startsWith(en.moves)) || null,
+      time: ui.texts().find((text) => text.startsWith(en.time)) || null,
+      par: ui.texts().find((text) => text.startsWith(en.par)) || null,
+    };
+  }
+
+  it("opens on the board the start screen was showing", async () => {
+    await openRecords({ stored: { [LEVEL_KEY]: LEVELS[2].id } });
+    expect(shown().level).toBe(levelName(LEVELS[2]));
+    expect(ui.buttonWithText(en.back)).toBeTruthy();
+  });
+
+  it("shows the record, the clock and the shortest game possible", async () => {
+    await openRecords({
+      stored: {
+        [bestKey(FIRST.id)]: 12,
+        [bestTimeKey(FIRST.id)]: 261_000,
+      },
+    });
+
+    expect(shown().moves).toBe(`${en.moves} 12`);
+    expect(shown().time).toBe(`${en.time} 4:21`);
+    expect(shown().par).toBe(`${en.par} ${FIRST.par}`);
+  });
+
+  it("leaves gaps for a board that has never been solved", async () => {
+    await openRecords();
+    expect(shown().moves).toBe(`${en.moves} ${en.none}`);
+    expect(shown().time).toBe(`${en.time} ${en.none}`);
+    // The shortest game possible is a property of the board, so it is there from
+    // the start - it is the one number that does not wait for a player.
+    expect(shown().par).toBe(`${en.par} ${FIRST.par}`);
+  });
+
+  it("shows the moves of a record that was set before the game had a clock", async () => {
+    await openRecords({ stored: { [bestKey(FIRST.id)]: 12 } });
+    expect(shown().moves).toBe(`${en.moves} 12`);
+    expect(shown().time).toBe(`${en.time} ${en.none}`);
+  });
+
+  it("pages through every board and wraps round, in both directions", async () => {
+    await openRecords();
+    expect(shown().level).toBe(levelName(FIRST));
+
+    for (let step = 1; step < LEVELS.length; step++) {
+      interaction.swipe(GESTURE_DOWN);
+      expect(shown().level, `down ${step}`).toBe(levelName(LEVELS[step]));
+    }
+    // Round the end and back to the first board.
+    interaction.swipe(GESTURE_DOWN);
+    expect(shown().level).toBe(levelName(FIRST));
+    // And the other way, off the front and onto the last.
+    interaction.swipe(GESTURE_UP);
+    expect(shown().level).toBe(levelName(LEVELS[LEVELS.length - 1]));
+  });
+
+  it("carries each board's own record as it pages", async () => {
+    await openRecords({
+      stored: {
+        [bestKey(FIRST.id)]: 9,
+        [bestTimeKey(FIRST.id)]: 61_000,
+        [bestKey(LEVELS[1].id)]: 40,
+        [bestTimeKey(LEVELS[1].id)]: 3_723_000,
+      },
+    });
+
+    expect(shown().moves).toBe(`${en.moves} 9`);
+    expect(shown().time).toBe(`${en.time} 1:01`);
+
+    interaction.swipe(GESTURE_DOWN);
+    expect(shown().moves).toBe(`${en.moves} 40`);
+    expect(shown().time).toBe(`${en.time} 1:02:03`);
+    expect(shown().par).toBe(`${en.par} ${LEVELS[1].par}`);
+  });
+
+  it("does not change which board is about to be played", async () => {
+    await openRecords({ stored: { [LEVEL_KEY]: FIRST.id } });
+    interaction.swipe(GESTURE_DOWN);
+    interaction.swipe(GESTURE_DOWN);
+
+    press(en.back);
+    expect(ui.buttonWithText(levelName(FIRST))).toBeTruthy();
+    expect(storage.stored()[LEVEL_KEY]).toBe(FIRST.id);
+  });
+
+  it("comes back to the start screen, by button and by swiping right", async () => {
+    await openRecords();
+    press(en.back);
+    expect(ui.buttonWithText(en.play)).toBeTruthy();
+
+    press(en.records);
+    // A swipe right goes back a screen rather than out of the app: the records
+    // are one level deeper than the menu that lets you leave.
+    expect(interaction.swipe(GESTURE_RIGHT)).toBe(true);
+    expect(ui.buttonWithText(en.play)).toBeTruthy();
+  });
+
+  it("shows a record that was just set", async () => {
+    setClock(1_700_000_000_000);
+    await boot();
+    press(en.play);
+    tick(261_000);
+    const moves = playOut(FIRST.id);
+
+    // Back out of the solved board to the start screen, then into the records.
+    press(en.again);
+    pressIcon("menu.png");
+    press(en.levels);
+    press(en.records);
+
+    expect(shown().moves).toBe(`${en.moves} ${moves}`);
+    expect(shown().time).toBe(`${en.time} 4:21`);
+  });
+
+  it("leaves no tiles or game behind it", async () => {
+    await boot();
+    press(en.play);
+    // Reachable from the start screen, so a game has to be put away first; this
+    // is the same clean-up the level list does.
+    pressIcon("menu.png");
+    press(en.levels);
+    press(en.records);
+
+    expect(tiles().length).toBe(0);
+    expect(ui.liveOfType(ui.widget.STROKE_RECT).length).toBe(0);
+    expect(counterText()).toBeNull();
+  });
+});
+
 describe("the screen it leaves behind", () => {
   it("never grows a pile of widgets as the screens come and go", async () => {
     await boot();
