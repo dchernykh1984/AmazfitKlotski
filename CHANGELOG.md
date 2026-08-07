@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.3.0...amazfit-klotski-v0.4.0) (2026-08-07)
+
+
+### Features
+
+* **records:** draw a board's record on the whole face instead of on a panel ([5d686d2](https://github.com/dchernykh1984/AmazfitKlotski/commit/5d686d289e31c85181663f9815b64ca5284bd0cf))
+
+
+### Bug Fixes
+
+* page the boards the way a finger drags a list, not against it ([d3ff303](https://github.com/dchernykh1984/AmazfitKlotski/commit/d3ff3030a11dce1f1b046134d513fd97bf93da1a))
+
 ## [0.3.0](https://github.com/dchernykh1984/AmazfitKlotski/compare/amazfit-klotski-v0.2.2...amazfit-klotski-v0.3.0) (2026-08-07)
 
 
