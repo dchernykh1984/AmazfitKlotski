@@ -707,8 +707,8 @@ Page({
     );
   },
 
-  // Moves so far against the shortest game possible. Recreated rather than
-  // mutated, which happens once per move at human speed.
+  // Moves spent so far, with nothing to measure them against. Recreated rather
+  // than mutated, which happens once per move at human speed.
   drawCounter() {
     this.clearCounter();
     const game = this.state.game;
