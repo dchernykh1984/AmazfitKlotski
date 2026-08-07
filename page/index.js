@@ -45,6 +45,7 @@ import {
   COLOR_BOARD,
   COLOR_BUTTON,
   COLOR_BUTTON_PRESSED,
+  COLOR_DIM,
   COLOR_EXIT,
   COLOR_MUTED,
   COLOR_SELECTION,
@@ -513,7 +514,11 @@ Page({
 
   // One board's record per screen, paged with a swipe up or down and wrapping
   // round, so the whole ladder is reachable without a list that would not fit.
-  // Reading the records leaves the chosen board alone.
+  // Nothing is being played here, so the tray is covered rather than drawn on:
+  // that gives the figures the whole round face instead of the width of a panel,
+  // and leaves room to hang the neighbouring boards above and below, barely lit,
+  // as the sign that the ladder goes on. Reading the records leaves the chosen
+  // board alone.
   showRecords(levelId) {
     const level = levelById(levelId === undefined ? this.state.recordsId : levelId);
     this.state.screen = "records";
@@ -525,35 +530,35 @@ Page({
 
     const record = this.recordFor(level.id);
     const solved = hasRecord(record);
-    this.drawMenu([
-      { kind: "text", height: TEXT.row, color: COLOR_ACCENT, text: this.levelName(level) },
-      { kind: "gap", height: TEXT.gap },
+    const box = LAYOUT.records;
+    const figures = [
+      { color: COLOR_TEXT, text: `${this.text("moves")} ${solved ? record.moves : this.text("none")}` },
       {
-        kind: "text",
-        height: TEXT.small,
-        color: COLOR_TEXT,
-        text: `${this.text("moves")} ${solved ? record.moves : this.text("none")}`,
-      },
-      {
-        kind: "text",
-        height: TEXT.small,
         color: COLOR_TEXT,
         text: `${this.text("time")} ${formatElapsed(record.time, this.text("none"))}`,
       },
-      {
-        kind: "text",
-        height: TEXT.small,
-        color: COLOR_MUTED,
-        text: `${this.text("minimum")} ${level.par}`,
-      },
-      { kind: "gap", height: TEXT.gap },
-      {
-        kind: "button",
-        height: TEXT.button,
-        text: this.text("back"),
-        onClick: () => this.showStart(),
-      },
-    ]);
+      { color: COLOR_MUTED, text: `${this.text("minimum")} ${level.par}` },
+    ];
+
+    this.clearMenu();
+    this.state.menu.push(
+      hmUI.createWidget(hmUI.widget.FILL_RECT, {
+        x: 0,
+        y: 0,
+        w: SCREEN_SIZE,
+        h: SCREEN_SIZE,
+        color: COLOR_BACKGROUND,
+      }),
+      this.createLine(box.above, COLOR_DIM, this.levelName(previousLevel(level.id))),
+      this.createLine(box.title, COLOR_ACCENT, this.levelName(level))
+    );
+    for (let i = 0; i < figures.length; i++) {
+      this.state.menu.push(this.createLine(box.rows[i], figures[i].color, figures[i].text));
+    }
+    this.state.menu.push(
+      this.createLine(box.below, COLOR_DIM, this.levelName(nextLevel(level.id))),
+      this.createButton(box.back, this.text("back"), () => this.showStart())
+    );
   },
 
   playNextLevel() {
@@ -763,6 +768,13 @@ Page({
       }
       y += item.height;
     }
+  },
+
+  // A line drawn straight on the face, where the box the layout gives back is the
+  // height of the line itself. The type takes the same share of it as a menu row's
+  // does, so both screens read at one scale.
+  createLine(box, color, text) {
+    return this.createText(box, Math.round(box.h * 0.76), color, text);
   },
 
   createText(box, size, color, text) {
