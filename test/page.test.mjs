@@ -7,6 +7,7 @@ import { formatElapsed } from "../lib/clock.js";
 import { assignArt } from "../lib/pieces.js";
 import { LABELS } from "../lib/i18n/labels.js";
 import { levelLabel } from "../lib/i18n/keys.js";
+import { COLOR_ACCENT, COLOR_BOARD, COLOR_DIM } from "../utils/config/constants.js";
 import { GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT, GESTURE_UP } from "./stubs/zos-interaction.mjs";
 import { solutionMoves } from "./helpers/solver.mjs";
 
@@ -894,9 +895,23 @@ describe("the records", () => {
     press(en.records);
   }
 
+  // Three boards are named on this screen - the one being read and its two
+  // neighbours - so the board it is actually showing is the lit one, not the
+  // first one drawn.
+  function levelLines() {
+    return ui
+      .liveOfType(ui.widget.TEXT)
+      .filter((created) => String(created.props.text).startsWith(en.level))
+      .sort((a, b) => a.props.y - b.props.y);
+  }
+
   function shown() {
+    const lit = levelLines().filter((created) => created.props.color === COLOR_ACCENT);
+    const dim = levelLines().filter((created) => created.props.color === COLOR_DIM);
     return {
-      level: ui.texts().find((text) => text.startsWith(en.level)) || null,
+      level: lit.length ? lit[0].props.text : null,
+      above: dim.length ? dim[0].props.text : null,
+      below: dim.length ? dim[dim.length - 1].props.text : null,
       moves: ui.texts().find((text) => text.startsWith(en.moves)) || null,
       time: ui.texts().find((text) => text.startsWith(en.time)) || null,
       minimum: ui.texts().find((text) => text.startsWith(en.minimum)) || null,
@@ -907,6 +922,71 @@ describe("the records", () => {
     await openRecords({ stored: { [LEVEL_KEY]: LEVELS[2].id } });
     expect(shown().level).toBe(levelName(LEVELS[2]));
     expect(ui.buttonWithText(en.back)).toBeTruthy();
+  });
+
+  it("names the boards on either side, barely lit, so the ladder is visible", async () => {
+    // The neighbours are the only thing telling a player there is anything to
+    // page to, and they wrap round with the screen they hang beside.
+    await openRecords();
+    expect(shown().level).toBe(levelName(FIRST));
+    expect(shown().above).toBe(levelName(LEVELS[LEVELS.length - 1]));
+    expect(shown().below).toBe(levelName(LEVELS[1]));
+
+    interaction.swipe(GESTURE_UP);
+    expect(shown().level).toBe(levelName(LEVELS[1]));
+    expect(shown().above).toBe(levelName(FIRST));
+    expect(shown().below).toBe(levelName(LEVELS[2]));
+  });
+
+  it("hangs one neighbour above the board it is showing and one below", async () => {
+    await openRecords({ stored: { [LEVEL_KEY]: LEVELS[2].id } });
+    const [above, title, below] = levelLines();
+    expect(above.props.text).toBe(levelName(LEVELS[1]));
+    expect(title.props.text).toBe(levelName(LEVELS[2]));
+    expect(below.props.text).toBe(levelName(LEVELS[3]));
+    // Dimmer than the board being read, or they would compete with it.
+    expect(above.props.color).toBe(COLOR_DIM);
+    expect(below.props.color).toBe(COLOR_DIM);
+    expect(title.props.color).toBe(COLOR_ACCENT);
+  });
+
+  it("covers the tray instead of drawing a panel on it", async () => {
+    // Nothing is being played here, so the board underneath is not worth showing
+    // through: the face is blacked out edge to edge and the record drawn straight
+    // on it. That is what buys the figures the width of the circle.
+    await openRecords();
+    const drawn = ui.live();
+    const board = drawn.find(
+      (created) => created.type === ui.widget.FILL_RECT && created.props.color === COLOR_BOARD
+    );
+    const fullScreen = drawn.filter(
+      (created) =>
+        created.type === ui.widget.FILL_RECT &&
+        created.props.w === screenSize &&
+        created.props.h === screenSize
+    );
+    expect(fullScreen.length).toBe(2);
+    expect(drawn.indexOf(fullScreen[1])).toBeGreaterThan(drawn.indexOf(board));
+    expect(fullScreen[1].props.alpha).toBe(undefined);
+
+    // And the cover goes when the screen does, or the game would be played blind.
+    press(en.back);
+    expect(
+      ui
+        .liveOfType(ui.widget.FILL_RECT)
+        .filter((created) => created.props.w === screenSize && created.props.h === screenSize).length
+    ).toBe(1);
+  });
+
+  it("reads larger than the same lines did inside a panel", async () => {
+    await openRecords();
+    const layout = screenLayout(screenSize);
+    const line = ui
+      .liveOfType(ui.widget.TEXT)
+      .find((created) => String(created.props.text).startsWith(en.moves));
+    // What this line used to get: a panel row, at the panel's width.
+    expect(line.props.text_size).toBeGreaterThan(Math.round(layout.text.small * 0.76));
+    expect(line.props.w).toBeGreaterThan(layout.menuWidth);
   });
 
   it("shows the record, the clock and the shortest game possible", async () => {

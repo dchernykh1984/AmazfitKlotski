@@ -9,6 +9,9 @@ export const COLOR_EXIT = 0xc8a24a;
 export const COLOR_SELECTION = 0xffd76a;
 export const COLOR_TEXT = 0xf2ece0;
 export const COLOR_MUTED = 0x9a8f7f;
+// Barely lit: the boards standing above and below the one being read in the
+// records, there to show the ladder goes on rather than to be read themselves.
+export const COLOR_DIM = 0x5a5148;
 export const COLOR_ACCENT = 0xe8cf9a;
 export const COLOR_BUTTON = 0x241c16;
 export const COLOR_BUTTON_PRESSED = 0x3d3025;

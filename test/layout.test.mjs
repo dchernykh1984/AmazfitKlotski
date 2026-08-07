@@ -45,6 +45,18 @@ function overlaps(a, b) {
 
 const CONTROLS = ["counter", "undo", "menu", "restart"];
 
+// The records screen, top to bottom, the way it is drawn.
+function recordLines(layout) {
+  const { records } = layout;
+  return [
+    ["above", records.above],
+    ["title", records.title],
+    ...records.rows.map((box, index) => [`row ${index}`, box]),
+    ["below", records.below],
+    ["back", records.back],
+  ];
+}
+
 describe("the 466px design", () => {
   it("is drawn exactly as designed, unscaled", () => {
     const layout = screenLayout(DESIGN_SIZE);
@@ -149,7 +161,6 @@ describe("every screen the bundle ships for", () => {
       const stacks = {
         start: t.title + t.gap + t.button + t.gap + t.button + t.gap + t.button + t.hint,
         solved: t.title + t.gap + t.row + t.small + t.small + t.gap + t.button + t.gap + t.button,
-        records: t.row + t.gap + t.small + t.small + t.small + t.gap + t.button,
         paused: t.button + t.gap + t.button,
       };
       for (const [name, height] of Object.entries(stacks)) {
@@ -157,6 +168,52 @@ describe("every screen the bundle ships for", () => {
       }
       expect(layout.menuWidth, `${size}/menu width`).toBeLessThan(layout.board.w);
       expect(layout.menuWidth, `${size}/menu width`).toBeGreaterThan(layout.board.w * 0.8);
+    }
+  });
+
+  // The records are the one screen drawn on the bare face rather than on a panel,
+  // so the panel is no longer there to keep a long line off the bezel: the circle
+  // is doing it, and these are the tests that say it does.
+  it("keeps every line of the records inside the bezel", () => {
+    for (const size of SHIPPED_SIZES) {
+      const layout = screenLayout(size);
+      for (const [name, box] of recordLines(layout)) {
+        expect(insideScreen(size, box, 0), `${size}/${name}`).toBe(true);
+        expect(box.w, `${size}/${name} width`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("stacks the records down the face without a line touching its neighbour", () => {
+    for (const size of SHIPPED_SIZES) {
+      const layout = screenLayout(size);
+      const lines = recordLines(layout);
+      for (let i = 1; i < lines.length; i++) {
+        const [name, box] = lines[i];
+        const [, previous] = lines[i - 1];
+        expect(box.y, `${size}/${name} order`).toBeGreaterThanOrEqual(previous.y + previous.h);
+        expect(overlaps(previous, box), `${size}/${name} overlap`).toBe(false);
+      }
+    }
+  });
+
+  it("reads larger on the records than the same lines did on a panel", () => {
+    for (const size of SHIPPED_SIZES) {
+      const layout = screenLayout(size);
+      const { records, text } = layout;
+      // The point of dropping the panel: the figures get a row of their own that
+      // is taller than a menu row, and the width of the circle to spread in.
+      for (const row of records.rows) {
+        expect(row.h, `${size}/row height`).toBeGreaterThan(text.small);
+        expect(row.w, `${size}/row width`).toBeGreaterThan(layout.menuWidth);
+      }
+      expect(records.title.h, `${size}/title`).toBeGreaterThan(text.row);
+      // The neighbours stay quieter than the board being read.
+      expect(records.above.h, `${size}/above`).toBeLessThan(records.rows[0].h);
+      expect(records.above.h, `${size}/above`).toBeGreaterThanOrEqual(MIN_TEXT);
+      expect(records.below.h, `${size}/below`).toBe(records.above.h);
+      expect(records.back.w, `${size}/back`).toBeGreaterThanOrEqual(90);
+      expect(records.back.h, `${size}/back`).toBeGreaterThanOrEqual(30);
     }
   });
 
