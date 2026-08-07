@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { LABELS } from "../lib/i18n/labels.js";
-import { UI_KEYS, budgetFor, levelKey, MAX_LABEL, MAX_HINT } from "../lib/i18n/keys.js";
+import {
+  UI_KEYS,
+  budgetFor,
+  levelLabel,
+  MAX_LABEL,
+  MAX_LEVEL_LABEL,
+  MAX_HINT,
+} from "../lib/i18n/keys.js";
 import { LANGUAGES, DEFAULT_LANGUAGE, labelFor, languageFromZeppCode } from "../lib/i18n/index.js";
 import { LEVELS } from "../lib/levels.js";
 
@@ -41,12 +48,30 @@ describe("locale completeness", () => {
     expect(MAX_HINT).toBeGreaterThan(MAX_LABEL);
   });
 
-  it("names every bundled level in every language", () => {
+  it("names every bundled level in every language, from one word and a number", () => {
+    // Boards are numbered, so a board needs no string of its own - which is the
+    // point: adding a seventh board costs nothing in eleven languages.
     for (const level of LEVELS) {
-      expect(UI_KEYS, level.id).toContain(levelKey(level.id));
       for (const lang of LANGUAGES) {
-        expect(LABELS[lang][levelKey(level.id)], `${lang}/${level.id}`).toBeTruthy();
+        const label = levelLabel(LABELS[lang].level, level.id);
+        expect(label, `${lang}/${level.id}`).toContain(String(level.id));
+        expect(label, `${lang}/${level.id}`).toContain(LABELS[lang].level);
+        expect(label.length, `${lang}/${level.id} '${label}'`).toBeLessThanOrEqual(MAX_LEVEL_LABEL);
       }
+    }
+  });
+
+  it("leaves room for the number after the word", () => {
+    expect(MAX_LEVEL_LABEL).toBeGreaterThan(MAX_LABEL);
+    // Even a hundred boards in, the label still fits its button.
+    for (const lang of LANGUAGES) {
+      expect(levelLabel(LABELS[lang].level, 100).length, lang).toBeLessThanOrEqual(MAX_LEVEL_LABEL);
+    }
+  });
+
+  it("carries no leftover per-board names", () => {
+    for (const key of UI_KEYS) {
+      expect(key, key).not.toMatch(/^level_/);
     }
   });
 });

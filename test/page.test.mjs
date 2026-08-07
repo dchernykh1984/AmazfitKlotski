@@ -5,6 +5,7 @@ import { LEVELS, levelById, nextLevel } from "../lib/levels.js";
 import { LEVEL_KEY, bestKey } from "../lib/scores.js";
 import { assignArt } from "../lib/pieces.js";
 import { LABELS } from "../lib/i18n/labels.js";
+import { levelLabel } from "../lib/i18n/keys.js";
 import { GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT, GESTURE_UP } from "./stubs/zos-interaction.mjs";
 import { solutionMoves } from "./helpers/solver.mjs";
 
@@ -68,6 +69,11 @@ const GESTURES = {
 
 const en = LABELS.en;
 const FIRST = LEVELS[0];
+
+// A board is labelled by its number, the same way the page builds it.
+function levelName(level, table = en) {
+  return levelLabel(table.level, level.id);
+}
 
 function press(text) {
   const button = ui.buttonWithText(text);
@@ -193,12 +199,12 @@ describe("opening the app", () => {
 
   it("opens on the board that was played last", async () => {
     await boot({ stored: { [LEVEL_KEY]: LEVELS[2].id } });
-    expect(ui.buttonWithText(en[`level_${LEVELS[2].id}`])).toBeTruthy();
+    expect(ui.buttonWithText(levelName(LEVELS[2]))).toBeTruthy();
   });
 
   it("falls back to the first board when the stored one is gone", async () => {
     await boot({ stored: { [LEVEL_KEY]: "a-board-from-an-older-version" } });
-    expect(ui.buttonWithText(en[`level_${FIRST.id}`])).toBeTruthy();
+    expect(ui.buttonWithText(levelName(FIRST))).toBeTruthy();
   });
 
   it("still opens on a watch with no storage and no language setting", async () => {
@@ -221,20 +227,20 @@ describe("opening the app", () => {
 describe("choosing a board", () => {
   it("walks the ladder with the level button and remembers the choice", async () => {
     await boot();
-    press(en[`level_${FIRST.id}`]);
-    expect(ui.buttonWithText(en[`level_${LEVELS[1].id}`])).toBeTruthy();
+    press(levelName(FIRST));
+    expect(ui.buttonWithText(levelName(LEVELS[1]))).toBeTruthy();
     expect(storage.stored()[LEVEL_KEY]).toBe(LEVELS[1].id);
   });
 
   it("walks it with swipes too, in both directions", async () => {
     await boot();
     interaction.swipe(GESTURE_DOWN);
-    expect(ui.buttonWithText(en[`level_${LEVELS[1].id}`])).toBeTruthy();
+    expect(ui.buttonWithText(levelName(LEVELS[1]))).toBeTruthy();
     interaction.swipe(GESTURE_UP);
-    expect(ui.buttonWithText(en[`level_${FIRST.id}`])).toBeTruthy();
+    expect(ui.buttonWithText(levelName(FIRST))).toBeTruthy();
     // Wrapping backwards from the first board lands on the last.
     interaction.swipe(GESTURE_UP);
-    expect(ui.buttonWithText(en[`level_${LEVELS[LEVELS.length - 1].id}`])).toBeTruthy();
+    expect(ui.buttonWithText(levelName(LEVELS[LEVELS.length - 1]))).toBeTruthy();
   });
 
   it("shows the par of the board, and no record until one is set", async () => {

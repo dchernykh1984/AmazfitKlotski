@@ -27,7 +27,7 @@ import { FIRST_LEVEL, levelById, nextLevel, previousLevel } from "../lib/levels.
 import { CONTROL_ART, assignArt } from "../lib/pieces.js";
 import { cellAt, screenLayout, selectionBox, tileBox } from "../lib/layout.js";
 import { centeredBox } from "../lib/round-geometry.js";
-import { labelFor, languageFromZeppCode, levelKey } from "../lib/i18n/index.js";
+import { labelFor, languageFromZeppCode, levelLabel } from "../lib/i18n/index.js";
 import { LEVEL_KEY, bestKey, hasRecord, normalizeMoves, updateBest } from "../lib/scores.js";
 import { SCREEN_SIZE } from "../utils/config/device.js";
 import {
@@ -317,7 +317,7 @@ Page({
       {
         kind: "button",
         height: TEXT.button,
-        text: this.text(levelKey(level.id)),
+        text: this.levelName(level),
         onClick: () => this.chooseLevel(nextLevel(this.state.levelId).id),
       },
       {
@@ -725,6 +725,12 @@ Page({
 
   bestText() {
     return hasRecord(this.state.best) ? String(this.state.best) : this.text("none");
+  },
+
+  // A board is called by its number: one word to translate, and a board added
+  // later needs no new string at all.
+  levelName(level) {
+    return levelLabel(this.text("level"), level.id);
   },
 
   text(key) {
