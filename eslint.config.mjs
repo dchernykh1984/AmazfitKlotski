@@ -43,9 +43,16 @@ export default [
     },
   },
 
-  // Tests and Node-side tooling run under Node/Vitest.
+  // Tests and Node-side tooling run under Node/Vitest. That includes the agent
+  // hooks in .claude/hooks/, which are ordinary Node scripts the editor runs.
   {
-    files: ["**/*.test.mjs", "*.config.mjs", "scripts/**/*.js", "scripts/**/*.mjs"],
+    files: [
+      "**/*.test.mjs",
+      "*.config.mjs",
+      "scripts/**/*.js",
+      "scripts/**/*.mjs",
+      ".claude/hooks/**/*.mjs",
+    ],
     languageOptions: { globals: { ...globals.node } },
   },
 
