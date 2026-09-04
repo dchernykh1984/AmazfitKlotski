@@ -39,7 +39,9 @@ stand on its own:
 4. The commit message is a single-line Conventional Commit, imperative and
    specific about the change rather than the file: `fix: page the boards the way a
 finger drags a list, not against it`, not `fix: update index.js`. Commitizen
-   validates it locally and in CI.
+   validates it locally and in CI. The subject is the whole message: no body, no
+   trailers, no `Co-Authored-By`, and no "generated with" footer in the pull
+   request description either - strip one if a default adds it.
 
 ## Branches and pull requests
 
@@ -50,7 +52,15 @@ finger drags a list, not against it`, not `fix: update index.js`. Commitizen
 --delete-branch --admin` is the route that works; it is a deliberate bypass, so
   only merge when the person asking has actually asked for that merge.
 - The required checks are `pre-commit`, `test`, `actionlint`, `commitizen` and
-  `osv-scan`. Watch them with `gh pr checks <n> --watch --interval 20`.
+  `osv-scan`. Watch them with `gh pr checks <n> --watch --interval 20`, but read the
+  verdict from the rollup: `gh pr checks` reports a per-check status that lags and can
+  still say `pending` long after a job has finished, which reads like a hung check.
+
+  ```bash
+  gh pr view <n> --json statusCheckRollup \
+    --jq '[.statusCheckRollup[] | {name:(.name//.context), s:(.conclusion//.state)}]'
+  ```
+
 - The pull request body is prose, not a checklist: what was wrong, what changed,
   and how it is held in place by tests. Say plainly when there are no new strings
   to translate.
